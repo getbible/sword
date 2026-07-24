@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.sh text eol=lf
+*.phpt text eol=lf
+
+/.github export-ignore
+/.gitignore export-ignore
+/docs export-ignore
+/tests export-ignore
+/vendor/README.md export-ignore

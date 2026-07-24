@@ -1,0 +1,122 @@
+# SPDX-License-Identifier: GPL-2.0-only
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'agent/**']
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Static validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+        env:
+          fail-fast: true
+      - name: Install validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck
+      - name: Validate repository
+        run: |
+          composer validate --strict --no-check-publish
+          find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+          shellcheck scripts/*.sh
+          php -l getbiblesword.stub.php
+          php -l tests/integration.php
+          test "$(tr -d '\r\n' < VERSION)" = '0.1.0'
+
+  build:
+    name: PHP ${{ matrix.php }} ${{ matrix.thread_safety }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            thread_safety: nts
+          - php: '8.3'
+            thread_safety: nts
+          - php: '8.4'
+            thread_safety: nts
+          - php: '8.5'
+            thread_safety: nts
+          - php: '8.4'
+            thread_safety: zts
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+        env:
+          fail-fast: true
+          phpts: ${{ matrix.thread_safety }}
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            autoconf automake binutils build-essential cmake curl git \
+            libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
+            libtool pkg-config zlib1g-dev
+      - name: Build and test extension
+        run: ./scripts/build-extension.sh
+
+  pie:
+    name: PIE source-package build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+        env:
+          fail-fast: true
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            autoconf automake binutils build-essential cmake curl git \
+            libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
+            libtool pkg-config zlib1g-dev
+      - name: Download PIE 1.4.8
+        run: |
+          curl \
+            --fail \
+            --location \
+            --proto '=https' \
+            --retry 3 \
+            --show-error \
+            --silent \
+            --tlsv1.2 \
+            --output /tmp/pie.phar \
+            https://github.com/php/pie/releases/download/1.4.8/pie.phar
+          php /tmp/pie.phar --version
+      - name: Create and build PIE source package
+        run: |
+          mkdir -p dist extracted
+          ./scripts/package-source.sh "$(tr -d '\r\n' < VERSION)" dist
+          tar --extract --gzip --file dist/php_getbiblesword-0.1.0-src.tgz --directory extracted
+          package_root="$PWD/extracted/php_getbiblesword-0.1.0"
+          php /tmp/pie.phar repository:add path "$package_root"
+          php /tmp/pie.phar build 'getbible/sword:*@dev'
