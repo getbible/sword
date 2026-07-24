@@ -23,5 +23,12 @@ phpize
 ./configure --enable-getbiblesword
 make --jobs="${JOBS:-$detected_jobs}"
 
-NO_INTERACTION=1 REPORT_EXIT_STATUS=1 make test TESTS=tests/phpt
+if ! NO_INTERACTION=1 REPORT_EXIT_STATUS=1 make test TESTS=tests/phpt; then
+    find tests/phpt \
+        -type f \
+        -name '*.diff' \
+        -print \
+        -exec cat {} \;
+    exit 1
+fi
 ./scripts/test-extension.sh

@@ -528,6 +528,14 @@ PHP_MSHUTDOWN_FUNCTION(getbiblesword)
     return SUCCESS;
 }
 
+PHP_RINIT_FUNCTION(getbiblesword)
+{
+#if defined(ZTS) && defined(COMPILE_DL_GETBIBLESWORD)
+    ZEND_TSRMLS_CACHE_UPDATE();
+#endif
+    return SUCCESS;
+}
+
 PHP_MINFO_FUNCTION(getbiblesword)
 {
     php_info_print_table_start();
@@ -547,7 +555,7 @@ zend_module_entry getbiblesword_module_entry = {
     NULL,
     PHP_MINIT(getbiblesword),
     PHP_MSHUTDOWN(getbiblesword),
-    NULL,
+    PHP_RINIT(getbiblesword),
     NULL,
     PHP_MINFO(getbiblesword),
     PHP_GETBIBLESWORD_VERSION,
