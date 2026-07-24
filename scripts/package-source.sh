@@ -11,14 +11,18 @@ fi
 
 readonly requested_version=$1
 readonly output_directory=$2
-readonly repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-readonly project_version="$(tr -d '\r\n' < "$repository_root/VERSION")"
-readonly source_date_epoch="$(
+repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repository_root
+project_version="$(tr -d '\r\n' < "$repository_root/VERSION")"
+readonly project_version
+source_date_epoch="$(
     git -C "$repository_root" show -s --format=%ct HEAD
 )"
+readonly source_date_epoch
 readonly package_name="php_getbiblesword-${requested_version}"
 readonly archive_name="${package_name}-src.tgz"
-readonly temporary_root="$(mktemp -d)"
+temporary_root="$(mktemp -d)"
+readonly temporary_root
 readonly package_root="$temporary_root/$package_name"
 
 cleanup() {

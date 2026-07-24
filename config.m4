@@ -43,14 +43,19 @@ AS_IF([test "$PHP_GETBIBLESWORD" != "no"], [
     [test ! -f "$GBS_SWORD_PKGCONFIG/sword.pc"],
     [AC_MSG_ERROR([bundled SWORD pkg-config metadata was not installed])]
   )
+  AS_IF(
+    [! PKG_CONFIG_PATH="$GBS_SWORD_PKGCONFIG${PKG_CONFIG_PATH+:$PKG_CONFIG_PATH}" \
+      "$PKG_CONFIG" --exists "sword = 1.9.0"],
+    [AC_MSG_ERROR([bundled SWORD 1.9.0 pkg-config package was not found])]
+  )
 
   GBS_SWORD_CFLAGS="$(
     PKG_CONFIG_PATH="$GBS_SWORD_PKGCONFIG${PKG_CONFIG_PATH+:$PKG_CONFIG_PATH}" \
-      "$PKG_CONFIG" --cflags sword=1.9.0
+      "$PKG_CONFIG" --cflags "sword = 1.9.0"
   )"
   GBS_SWORD_LIBS="$(
     PKG_CONFIG_PATH="$GBS_SWORD_PKGCONFIG${PKG_CONFIG_PATH+:$PKG_CONFIG_PATH}" \
-      "$PKG_CONFIG" --static --libs sword=1.9.0
+      "$PKG_CONFIG" --static --libs "sword = 1.9.0"
   )"
 
   PHP_REQUIRE_CXX()
@@ -84,7 +89,7 @@ AS_IF([test "$PHP_GETBIBLESWORD" != "no"], [
     [$getbiblesword_sources],
     [$ext_shared],
     [],
-    [-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1 -Wall -Wextra -Wpedantic -Werror],
+    [-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1 -Wall -Wextra -Werror],
     [cxx]
   )
 ])

@@ -4,7 +4,9 @@
 #endif
 
 #include "php.h"
+#include "Zend/zend_exceptions.h"
 #include "ext/spl/spl_exceptions.h"
+#include "ext/standard/info.h"
 #include "main/php_streams.h"
 #include "php_getbiblesword.h"
 #include "getbiblesword_arginfo.h"

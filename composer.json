@@ -19,7 +19,8 @@
             "linux"
         ],
         "download-url-method": [
-            "pre-packaged-source"
+            "pre-packaged-source",
+            "composer-default"
         ]
     },
     "authors": [

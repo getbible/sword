@@ -40,7 +40,8 @@ if [[ -e "$install_prefix" ]]; then
     exit 1
 fi
 
-readonly temporary_root="$(mktemp -d)"
+temporary_root="$(mktemp -d)"
+readonly temporary_root
 readonly temporary_prefix="$temporary_root/install"
 
 cleanup() {
@@ -61,9 +62,10 @@ if [[ ! -x "$source_root/configure" ]]; then
     exit 1
 fi
 
-readonly detected_jobs="$(
+detected_jobs="$(
     getconf _NPROCESSORS_ONLN 2>/dev/null || printf '2\n'
 )"
+readonly detected_jobs
 
 pushd "$source_root" >/dev/null
 ./configure \
