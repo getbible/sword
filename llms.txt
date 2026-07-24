@@ -1,0 +1,31 @@
+# getBible SWORD for PHP
+
+`getbible/sword` is a GPL-2.0-only PIE package providing the native PHP
+extension `getbiblesword`.
+
+Public PHP namespace: `GetBible\Sword`.
+
+Current capabilities:
+
+- resolve a SWORD module root;
+- stream module discovery as `getbiblesword.ndjson/v1`;
+- stream complete module extraction as `getbiblesword.ndjson/v1`;
+- expose native ABI, engine, and contract metadata.
+
+Current non-capabilities:
+
+- no direct verse/reference query API;
+- no automatic remote module installation;
+- no runtime repository network access.
+
+Native pins:
+
+- getBibleSword 0.3.0 / C ABI 1;
+- CrossWire SWORD 1.9.0.
+
+Primary documentation:
+
+- `README.md`
+- `docs/php-api.md`
+- `docs/architecture.md`
+- `docs/releasing.md`

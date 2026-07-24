@@ -1,0 +1,39 @@
+{
+    "name": "getbible/sword",
+    "description": "Native streamed access to getBibleSword for PHP through PIE",
+    "type": "php-ext",
+    "license": "GPL-2.0-only",
+    "homepage": "https://github.com/getbible/sword",
+    "support": {
+        "issues": "https://github.com/getbible/sword/issues",
+        "source": "https://github.com/getbible/sword"
+    },
+    "require": {
+        "php": "^8.2 || ^8.3 || ^8.4 || ^8.5"
+    },
+    "php-ext": {
+        "extension-name": "getbiblesword",
+        "support-zts": true,
+        "support-nts": true,
+        "os-families": [
+            "linux"
+        ],
+        "download-url-method": [
+            "pre-packaged-source"
+        ]
+    },
+    "authors": [
+        {
+            "name": "GetBible",
+            "homepage": "https://getbible.net"
+        }
+    ],
+    "keywords": [
+        "bible",
+        "crosswire",
+        "extension",
+        "getbible",
+        "pie",
+        "sword"
+    ]
+}
