@@ -9,12 +9,14 @@ readonly GETBIBLESWORD_TAG="v${GETBIBLESWORD_VERSION}"
 readonly GETBIBLESWORD_COMMIT='c52003438dc7e3d5bab0d6680372b1de8a0077ce'
 readonly SWORD_VERSION='1.9.0'
 readonly SWORD_SHA256='42409cf3de2faf1108523e2c5ac0745d21f9ed2a5c78ed878ee9dcc303426b8a'
-readonly repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repository_root
 readonly vendor_root="$repository_root/vendor"
 readonly getbiblesword_target="$vendor_root/getbiblesword"
 readonly sword_target="$vendor_root/sword-${SWORD_VERSION}.tar.gz"
 readonly sword_url="https://github.com/getbible/getbiblesword/releases/download/${GETBIBLESWORD_TAG}/sword-${SWORD_VERSION}.tar.gz"
-readonly temporary_root="$(mktemp -d)"
+temporary_root="$(mktemp -d)"
+readonly temporary_root
 
 cleanup() {
     rm -rf -- "$temporary_root"
@@ -37,9 +39,10 @@ else
         https://github.com/getbible/getbiblesword.git \
         "$temporary_root/getbiblesword"
 
-    readonly resolved_commit="$(
+    resolved_commit="$(
         git -C "$temporary_root/getbiblesword" rev-parse 'HEAD^{commit}'
     )"
+    readonly resolved_commit
     if [[ "$resolved_commit" != "$GETBIBLESWORD_COMMIT" ]]; then
         printf 'getBibleSword %s resolved to %s, expected %s.\n' \
             "$GETBIBLESWORD_TAG" \

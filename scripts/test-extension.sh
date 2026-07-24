@@ -4,10 +4,12 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-readonly repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repository_root
 readonly extension="$repository_root/modules/getbiblesword.so"
 readonly sword_prefix="$repository_root/.getbiblesword/sword-1.9.0"
-readonly temporary_root="$(mktemp -d)"
+temporary_root="$(mktemp -d)"
+readonly temporary_root
 readonly fixture_root="$temporary_root/sword"
 readonly cli_build="$temporary_root/getbiblesword-cli"
 

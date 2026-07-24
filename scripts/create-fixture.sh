@@ -10,7 +10,8 @@ if (($# != 1)); then
 fi
 
 readonly output_root=$1
-readonly repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repository_root
 readonly imp2vs="$repository_root/.getbiblesword/sword-1.9.0/bin/imp2vs"
 readonly data_root="$output_root/modules/texts/rawtext/phpfixture"
 

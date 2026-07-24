@@ -4,10 +4,12 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-readonly repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-readonly detected_jobs="$(
+repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repository_root
+detected_jobs="$(
     getconf _NPROCESSORS_ONLN 2>/dev/null || printf '2\n'
 )"
+readonly detected_jobs
 
 cd "$repository_root"
 
