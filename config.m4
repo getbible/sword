@@ -93,7 +93,7 @@ AS_IF([test "$PHP_GETBIBLESWORD" != "no"], [
     [$getbiblesword_sources],
     [$ext_shared],
     [],
-    [-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1 -Wall -Wextra -Werror],
+    [-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1 -Wall -Wextra -Werror -Wno-unused-parameter],
     [cxx]
   )
 ])
