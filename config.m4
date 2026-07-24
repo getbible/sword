@@ -39,23 +39,27 @@ AS_IF([test "$PHP_GETBIBLESWORD" != "no"], [
     || AC_MSG_ERROR([failed to build bundled SWORD 1.9.0])
 
   GBS_SWORD_PKGCONFIG="$GBS_SWORD_PREFIX/lib/pkgconfig"
+  GBS_SWORD_PKGCONFIG_PREFIX="--define-variable=prefix=$GBS_SWORD_PREFIX"
   AS_IF(
     [test ! -f "$GBS_SWORD_PKGCONFIG/sword.pc"],
     [AC_MSG_ERROR([bundled SWORD pkg-config metadata was not installed])]
   )
   AS_IF(
     [! PKG_CONFIG_PATH="$GBS_SWORD_PKGCONFIG${PKG_CONFIG_PATH+:$PKG_CONFIG_PATH}" \
-      "$PKG_CONFIG" --exists "sword = 1.9.0"],
+      "$PKG_CONFIG" "$GBS_SWORD_PKGCONFIG_PREFIX" \
+      --exists "sword = 1.9.0"],
     [AC_MSG_ERROR([bundled SWORD 1.9.0 pkg-config package was not found])]
   )
 
   GBS_SWORD_CFLAGS="$(
     PKG_CONFIG_PATH="$GBS_SWORD_PKGCONFIG${PKG_CONFIG_PATH+:$PKG_CONFIG_PATH}" \
-      "$PKG_CONFIG" --cflags "sword = 1.9.0"
+      "$PKG_CONFIG" "$GBS_SWORD_PKGCONFIG_PREFIX" \
+      --cflags "sword = 1.9.0"
   )"
   GBS_SWORD_LIBS="$(
     PKG_CONFIG_PATH="$GBS_SWORD_PKGCONFIG${PKG_CONFIG_PATH+:$PKG_CONFIG_PATH}" \
-      "$PKG_CONFIG" --static --libs "sword = 1.9.0"
+      "$PKG_CONFIG" "$GBS_SWORD_PKGCONFIG_PREFIX" \
+      --static --libs "sword = 1.9.0"
   )"
 
   PHP_REQUIRE_CXX()

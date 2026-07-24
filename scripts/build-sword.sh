@@ -85,6 +85,28 @@ if [[ ! -f "$temporary_prefix/lib/libsword.a" ]] \
     exit 1
 fi
 
+readonly pkg_config_file="$temporary_prefix/lib/pkgconfig/sword.pc"
+readonly normalized_pkg_config="$temporary_root/sword.pc"
+awk \
+    -v final_prefix="$install_prefix" \
+    '
+        BEGIN { replaced = 0 }
+        /^prefix=/ {
+            print "prefix=" final_prefix
+            replaced = 1
+            next
+        }
+        { print }
+        END {
+            if (replaced == 0) {
+                exit 1
+            }
+        }
+    ' \
+    "$pkg_config_file" \
+    > "$normalized_pkg_config"
+mv -- "$normalized_pkg_config" "$pkg_config_file"
+
 printf '%s\n' "${SWORD_VERSION}:${SWORD_SHA256}" \
     > "$temporary_prefix/.getbible-sword-build"
 mkdir -p -- "$(dirname "$install_prefix")"
