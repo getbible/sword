@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 - Unreleased
+## 0.1.0 - 2026-07-25
 
 - Add the `getbiblesword` PHP extension for PIE.
 - Embed getBibleSword 0.3.0 and CrossWire SWORD 1.9.0.
