@@ -10,7 +10,10 @@ Current capabilities:
 - resolve a SWORD module root;
 - stream module discovery as `getbiblesword.ndjson/v1`;
 - stream complete module extraction as `getbiblesword.ndjson/v1`;
-- expose native ABI, engine, and contract metadata.
+- expose native ABI, engine, and contract metadata;
+- build a self-contained extension from verified native sources;
+- publish through an automatic semantic-version and tag workflow;
+- produce live KJV Revelation 1 release evidence.
 
 Current non-capabilities:
 
@@ -23,9 +26,18 @@ Native pins:
 - getBibleSword 0.3.0 / C ABI 1;
 - CrossWire SWORD 1.9.0.
 
+Source layout:
+
+- the Zend adapter source is `getbiblesword.c` at repository root, following
+  normal phpize extension layout;
+- native getBibleSword and SWORD sources are verified and vendored into release
+  source archives rather than duplicated in Git.
+
 Primary documentation:
 
 - `README.md`
 - `docs/php-api.md`
 - `docs/architecture.md`
+- `docs/repository-layout.md`
+- `docs/packagist.md`
 - `docs/releasing.md`
