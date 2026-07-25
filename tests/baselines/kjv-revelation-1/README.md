@@ -15,10 +15,12 @@ The public CrossWire `KJV.zip` is only the live SWORD module input. It is
 downloaded, opened by the compiled extension, and passed through getBibleSword.
 It is not the expected output and is not compared directly with these files.
 
-Every relevant CI and release run regenerates the chapter through the extension
-and compares the NDJSON and text files byte-for-byte with this baseline. A
-failure blocks a release while retaining the newly generated workflow artifact
-for inspection.
+Every relevant CI and release run regenerates Revelation chapters 1 and 22
+through one extension extraction and compares each chapter's NDJSON and text
+files byte-for-byte with its approved baseline. A failure blocks a release
+while retaining the newly generated workflow artifact for inspection.
 
-Do not refresh this directory automatically. Any future output change must be
-reviewed and approved by a maintainer in a dedicated pull request.
+The recovery workflow may propose a changed baseline only after five independent
+extension runs produce all six boundary files byte-for-byte identically. It
+opens a normal pull request; it never commits to `main`. A maintainer must
+inspect and merge that pull request before the candidate becomes approved.

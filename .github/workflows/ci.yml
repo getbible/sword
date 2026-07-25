@@ -44,9 +44,10 @@ jobs:
           shellcheck scripts/*.sh tests/*.sh
           bash tests/release-versioning.sh
           bash tests/kjv-baseline-verification.sh
+          bash tests/kjv-baseline-recovery.sh
           php -l getbiblesword.stub.php
           php -l tests/integration.php
-          php -l scripts/create-kjv-revelation-1-artifact.php
+          php -l scripts/create-kjv-revelation-boundary-artifacts.php
 
           version="$(tr -d '\r\n' < VERSION)"
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -95,16 +96,17 @@ jobs:
             libtool pkg-config zlib1g-dev
       - name: Build and test extension
         run: ./scripts/build-extension.sh
-      - name: Build KJV Revelation 1 evidence
+      - name: Build KJV Revelation boundary evidence
         if: matrix.php == '8.4' && matrix.thread_safety == 'nts'
         shell: bash
         run: |
           sudo apt-get install --yes jq unzip
-          bash scripts/build-kjv-revelation-1-evidence.sh release-evidence
+          bash scripts/build-kjv-revelation-boundary-evidence.sh \
+            release-evidence
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ always() && matrix.php == '8.4' && matrix.thread_safety == 'nts' && hashFiles('release-evidence/*') != '' }}
         with:
-          name: kjv-revelation-1-${{ github.sha }}
+          name: kjv-revelation-boundaries-${{ github.sha }}
           path: release-evidence/*
           if-no-files-found: error
           retention-days: 90

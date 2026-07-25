@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: GPL-2.0-only
+name: Golden Baseline
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: golden-baseline-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify KJV Revelation 1 and 22
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+        env:
+          fail-fast: true
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            autoconf automake binutils build-essential cmake curl git \
+            libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
+            jq libtool pkg-config unzip zlib1g-dev
+      - name: Build and test extension
+        run: ./scripts/build-extension.sh
+      - name: Generate and verify Revelation boundary chapters
+        shell: bash
+        run: |
+          bash scripts/build-kjv-revelation-boundary-evidence.sh \
+            golden-evidence
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ always() && hashFiles('golden-evidence/*') != '' }}
+        with:
+          name: kjv-revelation-boundaries-golden-${{ github.sha }}
+          path: golden-evidence/*
+          if-no-files-found: error
+          retention-days: 90

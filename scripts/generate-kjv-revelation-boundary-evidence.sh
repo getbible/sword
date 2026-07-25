@@ -36,6 +36,12 @@ if [[ ! -f "$extension" ]]; then
 fi
 
 mkdir -p -- "$module_root" "$output_directory"
+if find "$output_directory" -mindepth 1 -maxdepth 1 -print -quit \
+    | grep --quiet .; then
+    echo "Evidence output directory must be empty: $output_directory" >&2
+    exit 1
+fi
+
 curl \
     --fail \
     --location \
@@ -57,19 +63,17 @@ readonly source_sha256
 php \
     -n \
     -d "extension=$extension" \
-    "$repository_root/scripts/create-kjv-revelation-1-artifact.php" \
+    "$repository_root/scripts/create-kjv-revelation-boundary-artifacts.php" \
     "$module_root" \
     "$output_directory" \
     "$source_sha256"
 
 (
     cd "$output_directory"
-    sha256sum --check --strict <(
-        jq -r \
+    for chapter in 1 22; do
+        jq --raw-output \
             '"\(.entries_sha256)  \(.entries_file)\n\(.text_sha256)  \(.text_file)"' \
-            kjv-revelation-1.manifest.json
-    )
+            "kjv-revelation-${chapter}.manifest.json" \
+            | sha256sum --check --strict
+    done
 )
-
-bash "$repository_root/scripts/verify-kjv-revelation-1-baseline.sh" \
-    "$output_directory"

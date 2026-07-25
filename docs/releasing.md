@@ -6,11 +6,14 @@
    [packagist.md](packagist.md).
 2. In GitHub repository settings, allow GitHub Actions read/write workflow
    permissions.
-3. If `main` is protected, permit the Release workflow or GitHub Actions bot to
+3. Enable **Allow GitHub Actions to create and approve pull requests** so the
+   recovery workflow can open a baseline proposal. It never approves or merges
+   that proposal.
+4. If `main` is protected, permit the Release workflow or GitHub Actions bot to
    bypass the protection for the automated `VERSION` and `CHANGELOG.md` release
    commit.
-4. Require CI and CodeQL before normal changes reach `main`.
-5. Confirm the getBibleSword and SWORD pins in
+5. Require CI and CodeQL before normal changes reach `main`.
+6. Confirm the getBibleSword and SWORD pins in
    `scripts/vendor-dependencies.sh` remain intentional.
 
 The workflow needs no Packagist secret when Packagist's GitHub application or
@@ -38,12 +41,12 @@ The workflow behaves as follows:
 7. It builds that archive through PIE on PHP 8.4.
 8. It builds the extension and runs all normal integration and parity checks.
 9. It repeats the CI-tested live download of the public CrossWire KJV module as
-   test input and passes that module through the built PHP extension.
-10. It selects all 20 Revelation 1 entries from getBibleSword's own NDJSON
-    output and compares the NDJSON and readable text byte-for-byte with the
-    approved repository baseline.
-11. It uploads the generated Revelation 1 NDJSON, text, and manifest as workflow
-    and GitHub-release assets.
+   test input and passes that module through the built PHP extension once.
+10. It selects all 20 Revelation 1 entries and all 21 Revelation 22 entries
+    from getBibleSword's own NDJSON output and compares each chapter's NDJSON
+    and readable text byte-for-byte with its approved repository baseline.
+11. It uploads both chapters' generated NDJSON, text, and manifest files as
+    workflow and GitHub-release assets.
 12. It publishes the immutable GitHub release with generated release notes only
     when the golden-baseline comparison succeeds.
 
@@ -65,7 +68,44 @@ The tag-driven workflow validates that the tag exactly matches `VERSION`, then
 uses the same source, PIE, KJV evidence, and publication jobs as the manual
 workflow.
 
-## Failure recovery
+## Golden-baseline recovery
+
+The **Golden Baseline** workflow is independent of releases. It runs:
+
+- after every push to `main`;
+- daily at 03:17 UTC; and
+- whenever a maintainer dispatches it manually.
+
+It builds and tests the extension, downloads the current public CrossWire KJV
+module as input, streams it through `GetBible\Sword\Engine`, and compares
+Revelation 1 and 22 with the approved repository files. Its generated artifact
+is retained even on failure.
+
+A failed default-branch golden run automatically starts **Golden Baseline
+Recovery**. Recovery:
+
+1. checks out the exact failed `main` commit;
+2. builds and tests the extension once;
+3. independently downloads KJV and runs the extension five times;
+4. validates all 20 Revelation 1 verses and all 21 Revelation 22 verses;
+5. requires the two NDJSON files, two text files, and two manifests to match
+   byte-for-byte across all five runs;
+6. uploads all five complete candidate sets for maintainer inspection;
+7. creates no PR when the candidate is unstable or still matches the approved
+   baseline; and
+8. for a stable changed candidate, creates an
+   `automation/kjv-golden-FINGERPRINT` branch and opens a normal pull request.
+
+The workflow also dispatches CI and CodeQL for the candidate branch because
+GitHub suppresses ordinary workflow recursion from its built-in token. It never
+approves or merges the PR and never writes a baseline directly to `main`.
+
+The maintainer reviews the baseline diff and the downloadable five-run artifact.
+Merging the PR promotes the candidate. Closing the PR rejects it. After a merge,
+the normal `main` CI and golden workflows regenerate both chapters against the
+new approved files; releases remain blocked until those checks pass.
+
+## Release failure recovery
 
 The manual workflow creates the tag before expensive builds begin so every
 asset is built from an immutable commit.
@@ -94,24 +134,29 @@ php_getbiblesword-X.Y.Z-src.tgz.sha256
 kjv-revelation-1.entries.ndjson
 kjv-revelation-1.txt
 kjv-revelation-1.manifest.json
+kjv-revelation-22.entries.ndjson
+kjv-revelation-22.txt
+kjv-revelation-22.manifest.json
 ```
 
-The Revelation evidence is a selected set of exact `entry` records, not a
-complete `getbiblesword.ndjson/v1` stream. Its manifest sets
+Each Revelation evidence set is a selected group of exact `entry` records, not
+a complete `getbiblesword.ndjson/v1` stream. Each manifest sets
 `whole_contract_stream` to `false` and records hashes for the source KJV archive
-and both evidence files.
+and its two evidence files.
 
 The approved historical output is committed in
-`tests/baselines/kjv-revelation-1/`. CrossWire's downloaded module is live test
-input; it is not used as the expected output. The extension must regenerate the
-chapter, and both generated payload files must match the committed output
-exactly.
+`tests/baselines/kjv-revelation-1/` and
+`tests/baselines/kjv-revelation-22/`. CrossWire's downloaded module is live test
+input; it is not used as the expected output. The extension must regenerate
+both chapters, and all four generated payload files must match the committed
+output exactly.
 
 If the comparison fails, the workflow fails and no GitHub release is published.
 The generated files are still uploaded as a workflow artifact when they exist,
-so the difference can be investigated. Never replace the baseline merely to
-make CI green. A baseline update requires an intentional pull request and
-maintainer confirmation that the changed getBibleSword output is correct.
+so the difference can be investigated. Never replace a baseline merely to make
+CI green. The five-run recovery may prepare the intentional pull request, but a
+maintainer must confirm that the changed getBibleSword output is correct and
+merge it before any release can continue.
 
 ## Post-release
 

@@ -13,5 +13,9 @@
   source checksum, and artifact checksums to both CI and release runs.
 - Commit the maintainer-approved Revelation 1 output and require every CI and
   release extraction to match its NDJSON and readable text byte-for-byte.
+- Add Revelation 22 to the golden evidence and monitor both boundary chapters
+  after every `main` update, daily, and on demand.
+- Add five-run baseline recovery that opens a maintainer-review pull request
+  only for byte-identical, reproducible changed output.
 - Document the PHP-extension source layout, Packagist registration, release
   recovery, and both supported release entry points.
