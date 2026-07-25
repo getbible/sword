@@ -5,52 +5,198 @@ on:
   push:
     tags: ['v*.*.*']
   workflow_dispatch:
+    inputs:
+      bump:
+        description: Semantic version increment (auto inspects commit messages)
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  source:
-    name: Build PIE source package
+  prepare:
+    name: Resolve version and tag
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 15
+    permissions:
+      contents: write
     outputs:
-      version: ${{ steps.version.outputs.version }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+      sha: ${{ steps.release.outputs.sha }}
+      bump: ${{ steps.release.outputs.bump }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-      - name: Resolve version
-        id: version
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.repository.default_branch || github.ref }}
+      - name: Validate pushed tag
+        if: github.event_name == 'push'
+        id: pushed
+        shell: bash
         run: |
+          set -euo pipefail
           version="$(tr -d '\r\n' < VERSION)"
+          tag="${GITHUB_REF_NAME}"
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "VERSION is not a stable semantic version: $version" >&2
             exit 1
           fi
-          if [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" != "v$version" ]]; then
-            echo "Tag $GITHUB_REF_NAME does not match VERSION $version." >&2
+          if [[ "$tag" != "v$version" ]]; then
+            echo "Tag $tag does not match VERSION $version." >&2
             exit 1
           fi
-          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "GitHub release $tag already exists." >&2
+            exit 1
+          fi
+          {
+            printf 'version=%s\n' "$version"
+            printf 'tag=%s\n' "$tag"
+            printf 'sha=%s\n' "$(git rev-parse 'HEAD^{commit}')"
+            printf 'bump=%s\n' 'tag'
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Prepare manually dispatched release
+        if: github.event_name == 'workflow_dispatch'
+        id: manual
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_NAME" != "$DEFAULT_BRANCH" ]]; then
+            echo "Manual releases must be dispatched from $DEFAULT_BRANCH." >&2
+            exit 1
+          fi
+
+          current_version="$(tr -d '\r\n' < VERSION)"
+          current_tag="v$current_version"
+          release_published=false
+          if git show-ref --verify --quiet "refs/tags/$current_tag" \
+              && gh release view "$current_tag" \
+                  --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            release_published=true
+          fi
+
+          RELEASE_PUBLISHED="$release_published" \
+            bash ./scripts/prepare-release.sh \
+              "$REQUESTED_BUMP" \
+              "$RUNNER_TEMP/release.env"
+          source "$RUNNER_TEMP/release.env"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if [[ "$changed" == true ]]; then
+            git add VERSION CHANGELOG.md
+            git commit -m "Release $version"
+          fi
+
+          release_sha="$(git rev-parse 'HEAD^{commit}')"
+          if [[ "$tag_exists" == false ]]; then
+            git tag --annotate "$tag" "$release_sha" \
+              --message "getbible/sword $version"
+            if [[ "$changed" == true ]]; then
+              git push --atomic origin \
+                "HEAD:refs/heads/$DEFAULT_BRANCH" \
+                "refs/tags/$tag"
+            else
+              git push origin "refs/tags/$tag"
+            fi
+          fi
+
+          {
+            cat "$RUNNER_TEMP/release.env"
+            printf 'sha=%s\n' "$release_sha"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_BUMP: ${{ inputs.bump }}
+      - name: Export release plan
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == push ]]; then
+            {
+              printf 'version=%s\n' "$PUSHED_VERSION"
+              printf 'tag=%s\n' "$PUSHED_TAG"
+              printf 'sha=%s\n' "$PUSHED_SHA"
+              printf 'bump=%s\n' "$PUSHED_BUMP"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              printf 'version=%s\n' "$MANUAL_VERSION"
+              printf 'tag=%s\n' "$MANUAL_TAG"
+              printf 'sha=%s\n' "$MANUAL_SHA"
+              printf 'bump=%s\n' "$MANUAL_BUMP"
+            } >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSHED_VERSION: ${{ steps.pushed.outputs.version }}
+          PUSHED_TAG: ${{ steps.pushed.outputs.tag }}
+          PUSHED_SHA: ${{ steps.pushed.outputs.sha }}
+          PUSHED_BUMP: ${{ steps.pushed.outputs.bump }}
+          MANUAL_VERSION: ${{ steps.manual.outputs.version }}
+          MANUAL_TAG: ${{ steps.manual.outputs.tag }}
+          MANUAL_SHA: ${{ steps.manual.outputs.sha }}
+          MANUAL_BUMP: ${{ steps.manual.outputs.bump }}
+      - name: Report release plan
+        shell: bash
+        run: |
+          {
+            printf '### Release plan\n\n'
+            printf -- '- Version: `%s`\n' "$RELEASE_VERSION"
+            printf -- '- Tag: `%s`\n' "$RELEASE_TAG"
+            printf -- '- Commit: `%s`\n' "$RELEASE_SHA"
+            printf -- '- Increment: `%s`\n' "$RELEASE_BUMP"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          RELEASE_BUMP: ${{ steps.release.outputs.bump }}
+
+  source:
+    name: Build PIE source package
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.sha }}
       - name: Build source archive
         run: |
           mkdir -p dist
-          ./scripts/package-source.sh "${{ steps.version.outputs.version }}" dist
+          ./scripts/package-source.sh "${{ needs.prepare.outputs.version }}" dist
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: php_getbiblesword-${{ steps.version.outputs.version }}-source
+          name: php_getbiblesword-${{ needs.prepare.outputs.version }}-source
           path: dist/*
           if-no-files-found: error
           retention-days: 30
 
   verify:
     name: Verify packaged source through PIE
-    needs: source
+    needs: [prepare, source]
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -66,19 +212,21 @@ jobs:
             libtool pkg-config zlib1g-dev
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: php_getbiblesword-${{ needs.source.outputs.version }}-source
+          name: php_getbiblesword-${{ needs.prepare.outputs.version }}-source
           path: dist
       - name: Build with PIE
+        shell: bash
         run: |
-          cd dist
-          sha256sum --check --strict "php_getbiblesword-${{ needs.source.outputs.version }}-src.tgz.sha256"
-          cd ..
+          set -euo pipefail
+          version="${{ needs.prepare.outputs.version }}"
+          archive="dist/php_getbiblesword-${version}-src.tgz"
+          (
+            cd dist
+            sha256sum --check --strict \
+              "php_getbiblesword-${version}-src.tgz.sha256"
+          )
           mkdir -p extracted
-          tar \
-            --extract \
-            --gzip \
-            --file "dist/php_getbiblesword-${{ needs.source.outputs.version }}-src.tgz" \
-            --directory extracted
+          tar --extract --gzip --file "$archive" --directory extracted
           curl \
             --fail \
             --location \
@@ -89,14 +237,84 @@ jobs:
             --tlsv1.2 \
             --output /tmp/pie.phar \
             https://github.com/php/pie/releases/download/1.4.8/pie.phar
-          package_root="$PWD/extracted/php_getbiblesword-${{ needs.source.outputs.version }}"
+          package_root="$PWD/extracted/php_getbiblesword-${version}"
           php /tmp/pie.phar repository:add path "$package_root"
           php /tmp/pie.phar build 'getbible/sword:*@dev'
 
+  evidence:
+    name: KJV Revelation 1 live evidence
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+        env:
+          fail-fast: true
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            autoconf automake binutils build-essential cmake curl git \
+            libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
+            jq libtool pkg-config unzip zlib1g-dev
+      - name: Build and test extension
+        run: ./scripts/build-extension.sh
+      - name: Download public CrossWire KJV module
+        shell: bash
+        run: |
+          set -euo pipefail
+          module_root="$RUNNER_TEMP/kjv-sword"
+          archive="$RUNNER_TEMP/KJV.zip"
+          mkdir -p "$module_root"
+          curl \
+            --fail \
+            --location \
+            --proto '=https' \
+            --retry 3 \
+            --show-error \
+            --silent \
+            --tlsv1.2 \
+            --output "$archive" \
+            https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/KJV.zip
+          unzip -q "$archive" -d "$module_root"
+          test -f "$module_root/mods.d/kjv.conf"
+          sha256sum "$archive" | cut -d' ' -f1 > "$RUNNER_TEMP/kjv.sha256"
+      - name: Extract Revelation 1 and print every verse
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-evidence
+          php \
+            -n \
+            -d "extension=$PWD/modules/getbiblesword.so" \
+            scripts/create-kjv-revelation-1-artifact.php \
+            "$RUNNER_TEMP/kjv-sword" \
+            release-evidence \
+            "$(cat "$RUNNER_TEMP/kjv.sha256")"
+          (
+            cd release-evidence
+            sha256sum --check --strict <(
+              jq -r '"\(.entries_sha256)  \(.entries_file)\n\(.text_sha256)  \(.text_file)"' \
+                kjv-revelation-1.manifest.json
+            )
+          )
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kjv-revelation-1-${{ needs.prepare.outputs.version }}
+          path: release-evidence/*
+          if-no-files-found: error
+          retention-days: 90
+
   publish:
     name: Publish GitHub release
-    if: github.ref_type == 'tag'
-    needs: [source, verify]
+    needs: [prepare, source, verify, evidence]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -104,18 +322,24 @@ jobs:
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: php_getbiblesword-${{ needs.source.outputs.version }}-source
+          name: php_getbiblesword-${{ needs.prepare.outputs.version }}-source
           path: dist
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: kjv-revelation-1-${{ needs.prepare.outputs.version }}
+          path: evidence
       - name: Publish immutable source release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
-          RELEASE_VERSION: ${{ needs.source.outputs.version }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           gh release create \
             "$RELEASE_TAG" \
             dist/* \
+            evidence/* \
             --repo "$GITHUB_REPOSITORY" \
+            --target "${{ needs.prepare.outputs.sha }}" \
             --title "getbible/sword $RELEASE_VERSION" \
             --generate-notes \
             --verify-tag
