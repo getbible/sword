@@ -29,5 +29,6 @@ CLI/PHP parity and dependency-boundary verification.
 Run `./scripts/build-extension.sh`. CI must prove real-module extraction,
 byte-for-byte standalone CLI parity, no `libsword.so` or
 `libgetbiblesword.so` dependency, successful PHPT tests, and exact KJV
-Revelation 1 parity with the maintainer-approved baseline. Never update a golden
-baseline automatically.
+Revelation 1 and 22 parity with the maintainer-approved baselines. Never write a
+golden baseline directly to `main`. A stable candidate may be proposed only in
+a maintainer-reviewed pull request after five byte-identical extension runs.

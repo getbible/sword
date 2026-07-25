@@ -1,6 +1,7 @@
 # getBible SWORD for PHP
 
 [![CI](https://github.com/getbible/sword/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/getbible/sword/actions/workflows/ci.yml)
+[![Golden](https://github.com/getbible/sword/actions/workflows/golden-baseline.yml/badge.svg?branch=main)](https://github.com/getbible/sword/actions/workflows/golden-baseline.yml)
 [![CodeQL](https://github.com/getbible/sword/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/getbible/sword/actions/workflows/codeql.yml)
 [![Release](https://github.com/getbible/sword/actions/workflows/release.yml/badge.svg)](https://github.com/getbible/sword/actions/workflows/release.yml)
 [![Version](https://img.shields.io/github/v/release/getbible/sword?display_name=tag&sort=semver&label=version)](https://github.com/getbible/sword/releases/latest)
@@ -178,27 +179,37 @@ pie repository:add vcs https://github.com/getbible/sword
 pie build 'getbible/sword:dev-main'
 ```
 
-## Release evidence
+## Golden release evidence
 
 The PHP 8.4 NTS CI job and every release download the public CrossWire KJV
 module as test input, build the extension, stream that module through
-`GetBible\Sword\Engine`, select book 66 chapter 1 from getBibleSword's NDJSON
-output, and require all 20 verses of Revelation 1. CrossWire's archive is not
-the expected result or test oracle.
+`GetBible\Sword\Engine`, and select the first and last chapters of canonical
+book 66 from getBibleSword's NDJSON output. The gate requires all 20 verses of
+Revelation 1 and all 21 verses of Revelation 22. CrossWire's archive is not the
+expected result or test oracle.
 
-The workflow compares the newly generated entry records and readable text
-byte-for-byte with the maintainer-approved historical output committed under
-`tests/baselines/kjv-revelation-1/`. It fails before publication on any output
+The workflow compares both chapters' newly generated entry records and readable
+text byte-for-byte with the maintainer-approved historical output committed
+under `tests/baselines/kjv-revelation-1/` and
+`tests/baselines/kjv-revelation-22/`. It fails before publication on any output
 change, prints every verse, and publishes:
 
-- exact selected NDJSON entry records;
-- a human-readable chapter text;
-- a manifest containing engine, ABI, contract, source, and artifact hashes.
+- two exact selected NDJSON entry-record files;
+- two human-readable chapter-text files; and
+- two manifests containing engine, ABI, contract, source, and artifact hashes.
 
 PR artifacts remain downloadable even when the comparison fails, making an
-unexpected result inspectable without weakening the golden baseline. Baseline
-updates are never automatic; they require explicit maintainer review and a
-normal pull request.
+unexpected result inspectable without weakening the golden baselines.
+
+The separate **Golden Baseline** workflow runs after each `main` update, daily,
+and on demand. If its strict comparison fails, **Golden Baseline Recovery**
+performs five independent live downloads and extension extractions. It proceeds
+only when all six generated files match byte-for-byte across all five runs. A
+stable changed result is proposed on an `automation/kjv-golden-*` branch in a
+normal pull request. It is never written directly to `main`; a maintainer must
+inspect and merge the PR before the candidate becomes the approved baseline.
+Unstable output, build failures, and results that still match the current
+baseline create no PR.
 
 ## Releasing
 

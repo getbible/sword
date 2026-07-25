@@ -242,7 +242,7 @@ jobs:
           php /tmp/pie.phar build 'getbible/sword:*@dev'
 
   evidence:
-    name: KJV Revelation 1 live evidence
+    name: KJV Revelation boundary evidence
     needs: prepare
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -266,13 +266,15 @@ jobs:
             jq libtool pkg-config unzip zlib1g-dev
       - name: Build and test extension
         run: ./scripts/build-extension.sh
-      - name: Extract Revelation 1 and print every verse
+      - name: Extract Revelation 1 and 22 and print every verse
         shell: bash
-        run: bash scripts/build-kjv-revelation-1-evidence.sh release-evidence
+        run: |
+          bash scripts/build-kjv-revelation-boundary-evidence.sh \
+            release-evidence
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ always() && hashFiles('release-evidence/*') != '' }}
         with:
-          name: kjv-revelation-1-${{ needs.prepare.outputs.version }}
+          name: kjv-revelation-boundaries-${{ needs.prepare.outputs.version }}
           path: release-evidence/*
           if-no-files-found: error
           retention-days: 90
@@ -291,7 +293,7 @@ jobs:
           path: dist
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: kjv-revelation-1-${{ needs.prepare.outputs.version }}
+          name: kjv-revelation-boundaries-${{ needs.prepare.outputs.version }}
           path: evidence
       - name: Publish immutable source release
         env:
