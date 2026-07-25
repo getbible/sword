@@ -37,11 +37,15 @@ The workflow behaves as follows:
 6. It builds the deterministic pre-packaged PIE source archive.
 7. It builds that archive through PIE on PHP 8.4.
 8. It builds the extension and runs all normal integration and parity checks.
-9. It repeats the CI-tested live download of the public CrossWire KJV module and
-   emits all 20 verses of Revelation 1.
-10. It uploads the Revelation 1 NDJSON, text, and manifest as workflow and
-    GitHub-release assets.
-11. It publishes the immutable GitHub release with generated release notes.
+9. It repeats the CI-tested live download of the public CrossWire KJV module as
+   test input and passes that module through the built PHP extension.
+10. It selects all 20 Revelation 1 entries from getBibleSword's own NDJSON
+    output and compares the NDJSON and readable text byte-for-byte with the
+    approved repository baseline.
+11. It uploads the generated Revelation 1 NDJSON, text, and manifest as workflow
+    and GitHub-release assets.
+12. It publishes the immutable GitHub release with generated release notes only
+    when the golden-baseline comparison succeeds.
 
 The workflow is serialized. Two releases cannot calculate or publish versions
 at the same time.
@@ -97,8 +101,17 @@ complete `getbiblesword.ndjson/v1` stream. Its manifest sets
 `whole_contract_stream` to `false` and records hashes for the source KJV archive
 and both evidence files.
 
-After the first artifact is reviewed, commit the approved files as a golden
-fixture and add a comparison job without removing the live extraction.
+The approved historical output is committed in
+`tests/baselines/kjv-revelation-1/`. CrossWire's downloaded module is live test
+input; it is not used as the expected output. The extension must regenerate the
+chapter, and both generated payload files must match the committed output
+exactly.
+
+If the comparison fails, the workflow fails and no GitHub release is published.
+The generated files are still uploaded as a workflow artifact when they exist,
+so the difference can be investigated. Never replace the baseline merely to
+make CI green. A baseline update requires an intentional pull request and
+maintainer confirmation that the changed getBibleSword output is correct.
 
 ## Post-release
 

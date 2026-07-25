@@ -28,4 +28,6 @@ CLI/PHP parity and dependency-boundary verification.
 
 Run `./scripts/build-extension.sh`. CI must prove real-module extraction,
 byte-for-byte standalone CLI parity, no `libsword.so` or
-`libgetbiblesword.so` dependency, and successful PHPT tests.
+`libgetbiblesword.so` dependency, successful PHPT tests, and exact KJV
+Revelation 1 parity with the maintainer-approved baseline. Never update a golden
+baseline automatically.

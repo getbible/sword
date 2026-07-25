@@ -13,7 +13,8 @@ Current capabilities:
 - expose native ABI, engine, and contract metadata;
 - build a self-contained extension from verified native sources;
 - publish through an automatic semantic-version and tag workflow;
-- produce live KJV Revelation 1 CI and release evidence.
+- regenerate live KJV Revelation 1 through the extension and enforce exact
+  output parity with a committed maintainer-approved baseline.
 
 Current non-capabilities:
 
