@@ -21,6 +21,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -33,13 +35,28 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes shellcheck
       - name: Validate repository
+        shell: bash
         run: |
+          set -euo pipefail
           composer validate --strict --no-check-publish
           find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
-          shellcheck scripts/*.sh
+          find tests -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+          shellcheck scripts/*.sh tests/*.sh
+          bash tests/release-versioning.sh
           php -l getbiblesword.stub.php
           php -l tests/integration.php
-          test "$(tr -d '\r\n' < VERSION)" = '0.1.0'
+          php -l scripts/create-kjv-revelation-1-artifact.php
+
+          version="$(tr -d '\r\n' < VERSION)"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "VERSION is not a stable semantic version: $version" >&2
+            exit 1
+          fi
+          if grep -R --line-number --fixed-strings '@version@' \
+              config.m4 php_getbiblesword.h; then
+            echo 'Unresolved extension version placeholder found.' >&2
+            exit 1
+          fi
 
   build:
     name: PHP ${{ matrix.php }} ${{ matrix.thread_safety }}
@@ -113,10 +130,17 @@ jobs:
             https://github.com/php/pie/releases/download/1.4.8/pie.phar
           php /tmp/pie.phar --version
       - name: Create and build PIE source package
+        shell: bash
         run: |
+          set -euo pipefail
+          version="$(tr -d '\r\n' < VERSION)"
           mkdir -p dist extracted
-          ./scripts/package-source.sh "$(tr -d '\r\n' < VERSION)" dist
-          tar --extract --gzip --file dist/php_getbiblesword-0.1.0-src.tgz --directory extracted
-          package_root="$PWD/extracted/php_getbiblesword-0.1.0"
+          ./scripts/package-source.sh "$version" dist
+          tar \
+            --extract \
+            --gzip \
+            --file "dist/php_getbiblesword-${version}-src.tgz" \
+            --directory extracted
+          package_root="$PWD/extracted/php_getbiblesword-${version}"
           php /tmp/pie.phar repository:add path "$package_root"
           php /tmp/pie.phar build 'getbible/sword:*@dev'
