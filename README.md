@@ -1,5 +1,11 @@
 # getBible SWORD for PHP
 
+[![CI](https://github.com/getbible/sword/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/getbible/sword/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/getbible/sword/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/getbible/sword/actions/workflows/codeql.yml)
+[![Release](https://github.com/getbible/sword/actions/workflows/release.yml/badge.svg)](https://github.com/getbible/sword/actions/workflows/release.yml)
+[![Version](https://img.shields.io/github/v/release/getbible/sword?display_name=tag&sort=semver&label=version)](https://github.com/getbible/sword/releases/latest)
+[![License](https://img.shields.io/badge/license-GPL--2.0--only-blue.svg)](LICENSE)
+
 `getbible/sword` is the native PHP extension for
 [getBibleSword](https://github.com/getbible/getbiblesword). It exposes the
 released getBibleSword `0.3.0` C ABI to PHP without starting a subprocess and
@@ -13,9 +19,9 @@ The package is designed for installation through the official
 pie install getbible/sword
 ```
 
-This repository is currently preparing its first release. Until `v0.1.0` is
-tagged and registered on Packagist, build the implementation branch directly as
-described in [Development](#development).
+The first stable package will become installable through that command after the
+repository is submitted to Packagist and the release workflow publishes its
+first tag. See [Packagist setup](docs/packagist.md).
 
 ## Runtime model
 
@@ -115,6 +121,27 @@ sudo apt-get install \
 
 PIE can detect many missing build tools, but not every native SWORD dependency.
 
+## Source layout
+
+The extension source is not missing: PHP extensions traditionally keep
+`config.m4`, their primary C file, public header, stub, and generated arginfo in
+the repository root. In this repository:
+
+| Path | Purpose |
+|---|---|
+| `getbiblesword.c` | Zend/PHP stream and object adapter |
+| `php_getbiblesword.h` | Extension identity and module declaration |
+| `getbiblesword.stub.php` | Canonical PHP API signatures |
+| `getbiblesword_arginfo.h` | Generated Zend argument metadata |
+| `config.m4` | phpize/PIE native build definition |
+| `vendor/getbiblesword/` | Verified native engine source, created while packaging |
+| `vendor/sword-1.9.0.tar.gz` | Verified SWORD source, created while packaging |
+
+The large native dependencies are deliberately not duplicated in Git. The
+release source archive vendors and verifies them before PIE receives the
+package. The complete map is in
+[docs/repository-layout.md](docs/repository-layout.md).
+
 ## Dependency integrity
 
 Release source packages vendor, rather than dynamically select:
@@ -144,16 +171,53 @@ The script:
 6. compares CLI and PHP output byte-for-byte; and
 7. verifies that the extension has no SWORD shared-library dependency.
 
-To exercise the branch through PIE before the first release:
+To build the current branch through PIE before a release:
 
 ```bash
 pie repository:add vcs https://github.com/getbible/sword
-pie build 'getbible/sword:dev-agent/pie-extension'
+pie build 'getbible/sword:dev-main'
 ```
 
-The repository is private at the time of initial implementation. It must be
-made public, or published through a private Composer repository, before normal
-Packagist installation can work.
+## Release evidence
+
+Every release downloads the public CrossWire KJV module, builds the extension,
+streams the real KJV module through PHP, selects book 66 chapter 1, and requires
+all 20 verses of Revelation 1. The workflow prints each verse and publishes:
+
+- exact selected NDJSON entry records;
+- a human-readable chapter text;
+- a manifest containing engine, ABI, contract, source, and artifact hashes.
+
+This first evidence artifact is intentionally observational. After maintainer
+review it can be committed as a golden baseline and future builds can enforce
+byte-for-byte equality.
+
+## Releasing
+
+Running the **Release** workflow is sufficient. Its default `auto` mode releases
+an untagged `VERSION`, or derives the next semantic version from changes since
+the latest release:
+
+- `BREAKING CHANGE:` or a conventional `!` commit selects `major`;
+- `feat:` selects `minor`;
+- all other changes select `patch`.
+
+The workflow updates `VERSION` and `CHANGELOG.md`, commits when necessary,
+creates the annotated version tag, builds and verifies the PIE source package,
+creates the KJV evidence artifact, and publishes the GitHub release. A manually
+pushed matching `vX.Y.Z` tag follows the same build, evidence, and publication
+path. See [docs/releasing.md](docs/releasing.md).
+
+## Documentation
+
+| Document | Purpose |
+|---|---|
+| [PHP API](docs/php-api.md) | Complete public PHP interface and errors |
+| [Architecture](docs/architecture.md) | Native, Zend, trust, and packaging boundaries |
+| [Repository layout](docs/repository-layout.md) | Location and origin of every source layer |
+| [Packagist setup](docs/packagist.md) | One-time package registration and synchronization |
+| [Releasing](docs/releasing.md) | Automated and tag-driven release operations |
+| [AI summary](llms.txt) | Compact machine-oriented capability map |
 
 ## Security
 
