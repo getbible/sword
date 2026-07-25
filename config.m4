@@ -31,6 +31,17 @@ AS_IF([test "$PHP_GETBIBLESWORD" != "no"], [
     ])]
   )
 
+  GBS_EXTENSION_VERSION="$(tr -d '\r\n' < "$abs_srcdir/VERSION")"
+  AS_IF([test -z "$GBS_EXTENSION_VERSION"], [
+    AC_MSG_ERROR([VERSION is empty])
+  ])
+  AC_DEFINE_UNQUOTED(
+    [PHP_GETBIBLESWORD_VERSION],
+    ["$GBS_EXTENSION_VERSION"],
+    [getbible/sword extension version]
+  )
+  AC_MSG_NOTICE([building getbiblesword extension $GBS_EXTENSION_VERSION])
+
   GBS_SWORD_PREFIX="$(pwd)/.getbiblesword/sword-1.9.0"
   AC_MSG_NOTICE([preparing pinned PIC-static SWORD 1.9.0])
   "$abs_srcdir/scripts/build-sword.sh" \
