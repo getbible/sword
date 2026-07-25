@@ -1,41 +1,104 @@
 # Releasing
 
-## Preconditions
+## One-time prerequisites
 
-1. Make the GitHub repository public, or configure a private Composer
-   repository that PIE can access.
-2. Register `getbible/sword` on Packagist as an extension package.
-3. Protect `main` and require the CI and CodeQL checks.
-4. Confirm `VERSION` contains the intended semantic version.
+1. Register `https://github.com/getbible/sword` on Packagist by following
+   [packagist.md](packagist.md).
+2. In GitHub repository settings, allow GitHub Actions read/write workflow
+   permissions.
+3. If `main` is protected, permit the Release workflow or GitHub Actions bot to
+   bypass the protection for the automated `VERSION` and `CHANGELOG.md` release
+   commit.
+4. Require CI and CodeQL before normal changes reach `main`.
 5. Confirm the getBibleSword and SWORD pins in
-   `scripts/vendor-dependencies.sh` are intentional.
+   `scripts/vendor-dependencies.sh` remain intentional.
 
-## Release
+The workflow needs no Packagist secret when Packagist's GitHub application or
+push webhook is active.
 
-Merge the release commit to `main`, then create and push the matching annotated
-tag:
+## Preferred release: run the workflow
+
+Open **Actions** → **Release** → **Run workflow**, leave `auto` selected, and run
+it from `main`.
+
+The workflow behaves as follows:
+
+1. If the semantic version in `VERSION` has no tag, it releases that version.
+   This is how the initial `0.1.0` release is created.
+2. If that version is already published, it inspects commits after the tag:
+   - `BREAKING CHANGE:` or a conventional commit with `!` selects `major`;
+   - `feat:` selects `minor`;
+   - all other commits select `patch`.
+3. A manually selected `patch`, `minor`, or `major` overrides inference.
+4. It updates `VERSION` and prepends a dated changelog section when a new version
+   is required.
+5. It commits the release metadata, creates an annotated `vX.Y.Z` tag, and pushes
+   both.
+6. It builds the deterministic pre-packaged PIE source archive.
+7. It builds that archive through PIE on PHP 8.4.
+8. It builds the extension and runs all normal integration and parity checks.
+9. It downloads the public CrossWire KJV module and emits all 20 verses of
+   Revelation 1.
+10. It uploads the Revelation 1 NDJSON, text, and manifest as workflow and
+    GitHub-release assets.
+11. It publishes the immutable GitHub release with generated release notes.
+
+The workflow is serialized. Two releases cannot calculate or publish versions
+at the same time.
+
+## Supported alternative: push a tag
+
+Maintainers may prepare `VERSION` and `CHANGELOG.md` in a normal pull request,
+merge it, and push the matching annotated tag:
 
 ```bash
-git tag -a v0.1.0 -m 'getbible/sword 0.1.0'
-git push origin v0.1.0
+version="$(tr -d '\r\n' < VERSION)"
+git tag -a "v${version}" -m "getbible/sword ${version}"
+git push origin "v${version}"
 ```
 
-The release workflow:
+The tag-driven workflow validates that the tag exactly matches `VERSION`, then
+uses the same source, PIE, KJV evidence, and publication jobs as the manual
+workflow.
 
-1. verifies that the tag matches `VERSION`;
-2. builds a deterministic pre-packaged PIE source archive;
-3. includes and verifies both native dependencies;
-4. builds the archive through PIE on PHP 8.4;
-5. verifies checksums; and
-6. publishes the source archive and checksum to a GitHub release.
+## Failure recovery
 
-The expected asset name is:
+The manual workflow creates the tag before expensive builds begin so every
+asset is built from an immutable commit.
+
+If a build fails after the tag is created but before the GitHub release exists,
+run the Release workflow again. When the unpublished tag still points to `HEAD`,
+the workflow reuses that tag instead of incrementing again.
+
+The workflow stops for manual intervention when:
+
+- an unpublished tag no longer points to `HEAD`;
+- the current tag is published and there are no new commits;
+- the calculated next tag already exists;
+- a pushed tag does not match `VERSION`; or
+- branch protection refuses the automated release commit.
+
+Never move a published tag.
+
+## Assets
+
+For version `X.Y.Z`, the release contains:
 
 ```text
-php_getbiblesword-0.1.0-src.tgz
+php_getbiblesword-X.Y.Z-src.tgz
+php_getbiblesword-X.Y.Z-src.tgz.sha256
+kjv-revelation-1.entries.ndjson
+kjv-revelation-1.txt
+kjv-revelation-1.manifest.json
 ```
 
-PIE recognizes this name because the extension name is `getbiblesword`.
+The Revelation evidence is a selected set of exact `entry` records, not a
+complete `getbiblesword.ndjson/v1` stream. Its manifest sets
+`whole_contract_stream` to `false` and records hashes for the source KJV archive
+and both evidence files.
+
+After the first artifact is reviewed, commit the approved files as a golden
+fixture and add a comparison job without removing the live extraction.
 
 ## Post-release
 
