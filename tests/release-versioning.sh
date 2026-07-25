@@ -55,7 +55,8 @@ test_initial_release() (
     target="$(new_repository initial unreleased)"
     output="$target/output"
     cd "$target"
-    RELEASE_PUBLISHED=false ./scripts/prepare-release.sh auto "$output" >/dev/null
+    RELEASE_PUBLISHED=false \
+        bash ./scripts/prepare-release.sh auto "$output" >/dev/null
     # shellcheck disable=SC1090
     source "$output"
 
@@ -87,7 +88,7 @@ test_increment() (
 
     cd "$target"
     RELEASE_PUBLISHED=true \
-        ./scripts/prepare-release.sh "$requested" "$output" >/dev/null
+        bash ./scripts/prepare-release.sh "$requested" "$output" >/dev/null
     # shellcheck disable=SC1090
     source "$output"
 
@@ -107,7 +108,8 @@ test_recovery() (
     git -C "$target" tag --annotate v0.1.0 --message '0.1.0'
 
     cd "$target"
-    RELEASE_PUBLISHED=false ./scripts/prepare-release.sh auto "$output" >/dev/null
+    RELEASE_PUBLISHED=false \
+        bash ./scripts/prepare-release.sh auto "$output" >/dev/null
     # shellcheck disable=SC1090
     source "$output"
 
@@ -123,7 +125,7 @@ test_no_changes_refused() (
 
     cd "$target"
     if RELEASE_PUBLISHED=true \
-        ./scripts/prepare-release.sh auto >/dev/null 2>&1; then
+        bash ./scripts/prepare-release.sh auto >/dev/null 2>&1; then
         echo 'Released tag without new commits was not refused.' >&2
         exit 1
     fi
