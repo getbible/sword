@@ -37,8 +37,8 @@ The workflow behaves as follows:
 6. It builds the deterministic pre-packaged PIE source archive.
 7. It builds that archive through PIE on PHP 8.4.
 8. It builds the extension and runs all normal integration and parity checks.
-9. It downloads the public CrossWire KJV module and emits all 20 verses of
-   Revelation 1.
+9. It repeats the CI-tested live download of the public CrossWire KJV module and
+   emits all 20 verses of Revelation 1.
 10. It uploads the Revelation 1 NDJSON, text, and manifest as workflow and
     GitHub-release assets.
 11. It publishes the immutable GitHub release with generated release notes.
