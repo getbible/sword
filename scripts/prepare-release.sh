@@ -45,9 +45,11 @@ current_tag="v$current_version"
 readonly current_tag
 latest_tag="$(
     git -C "$repository_root" tag \
-        --list 'v[0-9]*.[0-9]*.[0-9]*' \
+        --list 'v*' \
         --sort=-version:refname \
-        | head -n 1
+        | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+        | head -n 1 \
+        || true
 )"
 readonly latest_tag
 release_published=${RELEASE_PUBLISHED:-false}
