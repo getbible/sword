@@ -180,17 +180,19 @@ pie build 'getbible/sword:dev-main'
 
 ## Release evidence
 
-Every release downloads the public CrossWire KJV module, builds the extension,
-streams the real KJV module through PHP, selects book 66 chapter 1, and requires
-all 20 verses of Revelation 1. The workflow prints each verse and publishes:
+The PHP 8.4 NTS CI job and every release download the public CrossWire KJV
+module, build the extension, stream the real KJV module through PHP, select book
+66 chapter 1, and require all 20 verses of Revelation 1. The workflow prints
+each verse and publishes:
 
 - exact selected NDJSON entry records;
 - a human-readable chapter text;
 - a manifest containing engine, ABI, contract, source, and artifact hashes.
 
-This first evidence artifact is intentionally observational. After maintainer
-review it can be committed as a golden baseline and future builds can enforce
-byte-for-byte equality.
+PR artifacts make the evidence inspectable before merging or releasing. This
+first artifact is intentionally observational. After maintainer review it can
+be committed as a golden baseline and future builds can enforce byte-for-byte
+equality.
 
 ## Releasing
 
