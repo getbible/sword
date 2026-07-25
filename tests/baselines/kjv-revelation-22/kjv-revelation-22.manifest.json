@@ -1,0 +1,20 @@
+{
+    "artifact_format": "getbible/sword-release-evidence/v1",
+    "module": "KJV",
+    "reference": "Revelation 22",
+    "canonical_book": 66,
+    "testament": 2,
+    "testament_book": 27,
+    "chapter": 22,
+    "verses": 21,
+    "engine_version": "0.3.0",
+    "abi_version": 1,
+    "contract": "getbiblesword.ndjson/v1",
+    "whole_contract_stream": false,
+    "entries_file": "kjv-revelation-22.entries.ndjson",
+    "entries_sha256": "a17e4f5176acf4ada7daa89411e8537bbd4f0f618254cdc4c29284a5ffde7aa9",
+    "text_file": "kjv-revelation-22.txt",
+    "text_sha256": "9fd9ea09e2c3ece5dd44e4b9aa0f8d886522e076c8293ca751bc6c7b6605a398",
+    "source_url": "https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/KJV.zip",
+    "source_sha256": "873815aa4b4123025616d1f41eae75f412111275f4c3884e36f92d4f46dcba1d"
+}
