@@ -70,3 +70,6 @@ php \
             kjv-revelation-1.manifest.json
     )
 )
+
+bash "$repository_root/scripts/verify-kjv-revelation-1-baseline.sh" \
+    "$output_directory"

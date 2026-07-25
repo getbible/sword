@@ -11,5 +11,7 @@
   PIE verification, and GitHub release publication.
 - Add live KJV Revelation 1 release evidence with exact NDJSON, text, manifest,
   source checksum, and artifact checksums to both CI and release runs.
+- Commit the maintainer-approved Revelation 1 output and require every CI and
+  release extraction to match its NDJSON and readable text byte-for-byte.
 - Document the PHP-extension source layout, Packagist registration, release
   recovery, and both supported release entry points.

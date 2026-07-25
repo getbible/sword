@@ -1,0 +1,20 @@
+{
+    "artifact_format": "getbible/sword-release-evidence/v1",
+    "module": "KJV",
+    "reference": "Revelation 1",
+    "canonical_book": 66,
+    "testament": 2,
+    "testament_book": 27,
+    "chapter": 1,
+    "verses": 20,
+    "engine_version": "0.3.0",
+    "abi_version": 1,
+    "contract": "getbiblesword.ndjson/v1",
+    "whole_contract_stream": false,
+    "entries_file": "kjv-revelation-1.entries.ndjson",
+    "entries_sha256": "16889ddce7bca4f63c7dc0775e2a134fa9f3b079d7f2b95c5369b3192cb2e9cf",
+    "text_file": "kjv-revelation-1.txt",
+    "text_sha256": "c483a304bc662fb3748de91f36c5c14ad34f8efffa94abcbd85f9c3cecf88924",
+    "source_url": "https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/KJV.zip",
+    "source_sha256": "873815aa4b4123025616d1f41eae75f412111275f4c3884e36f92d4f46dcba1d"
+}
