@@ -51,9 +51,10 @@ memory-safety failure cannot be converted into a PHP exception.
 ## Packaging
 
 Git stores the extension source and immutable dependency metadata. A release
-pipeline creates `php_getbiblesword-VERSION-src.tgz` containing verified copies
-of getBibleSword and SWORD. PIE uses that pre-packaged source archive, builds the
-engine statically, and installs one PHP extension module.
+pipeline creates `php_getbiblesword-vVERSION-src.tgz` containing verified
+copies of getBibleSword and SWORD. The leading `v` matches the Composer pretty
+version PIE uses for release-asset discovery. PIE uses that pre-packaged source
+archive, builds the engine statically, and installs one PHP extension module.
 
 This design avoids:
 

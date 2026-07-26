@@ -155,7 +155,7 @@ jobs:
           tar \
             --extract \
             --gzip \
-            --file "dist/php_getbiblesword-${version}-src.tgz" \
+            --file "dist/php_getbiblesword-v${version}-src.tgz" \
             --directory extracted
           package_root="$PWD/extracted/php_getbiblesword-${version}"
           php /tmp/pie.phar repository:add path "$package_root"

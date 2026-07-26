@@ -20,7 +20,7 @@ source_date_epoch="$(
 )"
 readonly source_date_epoch
 readonly package_name="php_getbiblesword-${requested_version}"
-readonly archive_name="${package_name}-src.tgz"
+readonly archive_name="php_getbiblesword-v${requested_version}-src.tgz"
 temporary_root="$(mktemp -d)"
 readonly temporary_root
 readonly package_root="$temporary_root/$package_name"

@@ -219,11 +219,11 @@ jobs:
         run: |
           set -euo pipefail
           version="${{ needs.prepare.outputs.version }}"
-          archive="dist/php_getbiblesword-${version}-src.tgz"
+          archive="dist/php_getbiblesword-v${version}-src.tgz"
           (
             cd dist
             sha256sum --check --strict \
-              "php_getbiblesword-${version}-src.tgz.sha256"
+              "php_getbiblesword-v${version}-src.tgz.sha256"
           )
           mkdir -p extracted
           tar --extract --gzip --file "$archive" --directory extracted
