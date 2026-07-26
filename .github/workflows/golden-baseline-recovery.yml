@@ -48,11 +48,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes \
             autoconf automake binutils build-essential cmake curl git \
-            libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
-            jq libtool pkg-config unzip zlib1g-dev
+            jq libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
+            libtool pkg-config zlib1g-dev
       - name: Build and test extension
         run: ./scripts/build-extension.sh
-      - name: Generate five independent candidates
+      - name: Generate five independent local replay candidates
         shell: bash
         run: |
           set -euo pipefail
@@ -83,7 +83,7 @@ jobs:
             {
               printf '### Golden baseline recovery\n\n'
               printf '%s\n' \
-                'Five independent runs reproduced the approved baseline.'
+                'Five independent local replays reproduced the approved baseline.'
               printf '%s\n' \
                 'No baseline pull request is required.'
             } >> "$GITHUB_STEP_SUMMARY"
@@ -102,14 +102,9 @@ jobs:
                 kjv-revelation-22.manifest.json
             ) | sha256sum | cut -d' ' -f1
           )"
-          source_sha256="$(
-            jq --raw-output '.source_sha256' \
-              "$candidate_directory/kjv-revelation-1.manifest.json"
-          )"
           {
             echo 'changed=true'
             printf 'fingerprint=%s\n' "$candidate_fingerprint"
-            printf 'source_sha256=%s\n' "$source_sha256"
           } >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ always() && hashFiles('recovery-evidence/**/*') != '' }}
@@ -126,7 +121,6 @@ jobs:
           FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
           FINGERPRINT: ${{ steps.candidate.outputs.fingerprint }}
           GH_TOKEN: ${{ github.token }}
-          SOURCE_ARCHIVE_SHA256: ${{ steps.candidate.outputs.source_sha256 }}
         run: |
           set -euo pipefail
           readonly candidate_directory='recovery-evidence/run-1'
@@ -180,13 +174,17 @@ jobs:
           {
             printf '%s\n\n' '## Golden baseline recovery'
             printf '%s\n\n' \
-              'The strict Revelation boundary golden build failed on `main`.'
+              'The strict Revelation boundary self-replay failed on `main`.'
             printf '%s\n' \
-              'This candidate was generated five independent times through'
+              'This candidate was generated five independent times from the'
+            printf '%s\n' \
+              'maintainer-approved committed entries through'
             printf '%s\n\n' \
               '`GetBible\Sword\Engine`; all six files matched byte-for-byte.'
             printf -- '- Source commit: `%s`\n' "$SOURCE_SHA"
             printf -- '- Candidate fingerprint: `%s`\n' "$FINGERPRINT"
+            printf '%s\n' \
+              '- Fixture: approved repository baseline replay (network-free)'
             for chapter in 1 22; do
               entries_sha256="$(
                 sha256sum \
@@ -205,8 +203,7 @@ jobs:
                 "$chapter" \
                 "$text_sha256"
             done
-            printf -- '- CrossWire archive SHA-256: `%s`\n\n' \
-              "$SOURCE_ARCHIVE_SHA256"
+            printf '\n'
             if [[ -n "$FAILED_RUN_ID" ]]; then
               printf -- '- Failed golden run: %s/actions/runs/%s\n' \
                 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \

@@ -33,11 +33,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes \
             autoconf automake binutils build-essential cmake curl git \
-            libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
-            jq libtool pkg-config unzip zlib1g-dev
+            jq libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
+            libtool pkg-config zlib1g-dev
       - name: Build and test extension
         run: ./scripts/build-extension.sh
-      - name: Generate and verify Revelation boundary chapters
+      - name: Replay and verify Revelation boundary chapters
         shell: bash
         run: |
           bash scripts/build-kjv-revelation-boundary-evidence.sh \

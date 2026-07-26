@@ -13,11 +13,26 @@ Current capabilities:
 - expose native ABI, engine, and contract metadata;
 - build a self-contained extension from verified native sources;
 - publish through an automatic semantic-version and tag workflow;
-- regenerate live KJV Revelation 1 and 22 through one extension extraction and
-  enforce exact output parity with committed maintainer-approved baselines;
-- monitor the live baselines after `main` updates and daily;
-- after a mismatch, require five byte-identical independent runs before opening
-  a maintainer-review baseline-update pull request.
+- rebuild a temporary local KJV fixture from the maintainer-approved Revelation
+  1 and 22 baseline records, pass it through the current extension, and enforce
+  exact canonical output parity without downloading a remote Bible module;
+- compare every entry field except stream-position-only `sequence` and `ordinal`,
+  while comparing readable chapter text byte-for-byte;
+- run the network-free golden check in pull requests, after `main` updates,
+  daily, on demand, and before release publication;
+- after a mismatch, require five byte-identical independent local replay runs
+  before opening a maintainer-review baseline-update pull request.
+
+Golden evidence trust model:
+
+- committed files under `tests/baselines/kjv-revelation-1/` and
+  `tests/baselines/kjv-revelation-22/` are the prior approved execution;
+- their exact OSIS references and raw entry bytes seed a temporary SWORD module;
+- the current extension must reproduce their canonical entry content and text;
+- evidence jobs do not call `ftp.crosswire.org`, CrossWire module mirrors, or a
+  scraper;
+- a stable changed result can become the next baseline only through a normal
+  maintainer-reviewed pull request.
 
 Current non-capabilities:
 
@@ -35,7 +50,9 @@ Source layout:
 - the Zend adapter source is `getbiblesword.c` at repository root, following
   normal phpize extension layout;
 - native getBibleSword and SWORD sources are verified and vendored into release
-  source archives rather than duplicated in Git.
+  source archives rather than duplicated in Git;
+- golden evidence is regenerated from committed repository baselines, not a
+  live module download.
 
 Primary documentation:
 

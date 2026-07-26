@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Remove all CrossWire FTP and module-mirror downloads from golden evidence.
+- Rebuild the KJV Revelation 1 and 22 test module locally from the last
+  maintainer-approved extension output committed in `tests/baselines/`.
+- Restore deterministic golden evidence to the PHP 8.4 NTS pull-request build.
+- Compare complete canonical entry records while excluding only full-stream
+  position fields `sequence` and `ordinal`; continue comparing readable chapter
+  text byte-for-byte.
+- Record local replay provenance in evidence manifest format v2 and remove the
+  obsolete remote archive URL and checksum fields.
+- Keep five-run recovery and maintainer-reviewed baseline promotion entirely
+  self-contained and network-independent from Bible-module providers.
+
 ## 0.1.0 - 2026-07-25
 
 - Add the `getbiblesword` PHP extension for PIE.
