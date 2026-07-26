@@ -13,7 +13,12 @@ readonly output_directory=$1
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly repository_root
 readonly extension="$repository_root/modules/getbiblesword.so"
-readonly source_url='https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/KJV.zip'
+readonly expected_source_sha256='873815aa4b4123025616d1f41eae75f412111275f4c3884e36f92d4f46dcba1d'
+readonly -a source_urls=(
+    'https://ftp.crosswire.org/pub/sword/packages/rawzip/KJV.zip'
+    'https://www.crosswire.org/ftpmirror/pub/sword/packages/rawzip/KJV.zip'
+    'https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/KJV.zip'
+)
 temporary_root="$(mktemp -d)"
 readonly temporary_root
 readonly module_root="$temporary_root/sword"
@@ -42,16 +47,32 @@ if find "$output_directory" -mindepth 1 -maxdepth 1 -print -quit \
     exit 1
 fi
 
-curl \
-    --fail \
-    --location \
-    --proto '=https' \
-    --retry 3 \
-    --show-error \
-    --silent \
-    --tlsv1.2 \
-    --output "$archive" \
-    "$source_url"
+downloaded=false
+
+for source_url in "${source_urls[@]}"; do
+    if curl \
+        --connect-timeout 20 \
+        --fail \
+        --location \
+        --max-time 180 \
+        --proto '=https' \
+        --retry 2 \
+        --show-error \
+        --silent \
+        --tlsv1.2 \
+        --output "$archive" \
+        "$source_url"; then
+        downloaded=true
+        break
+    fi
+done
+
+if [[ "$downloaded" != true ]]; then
+    echo "CrossWire KJV archive could not be downloaded from an official endpoint." >&2
+    exit 1
+fi
+
+echo "$expected_source_sha256  $archive" | sha256sum --check --strict
 unzip -q "$archive" -d "$module_root"
 if [[ ! -f "$module_root/mods.d/kjv.conf" ]]; then
     echo "CrossWire KJV archive does not contain mods.d/kjv.conf." >&2
