@@ -129,8 +129,8 @@ Never move a published tag.
 For version `X.Y.Z`, the release contains:
 
 ```text
-php_getbiblesword-X.Y.Z-src.tgz
-php_getbiblesword-X.Y.Z-src.tgz.sha256
+php_getbiblesword-vX.Y.Z-src.tgz
+php_getbiblesword-vX.Y.Z-src.tgz.sha256
 kjv-revelation-1.entries.ndjson
 kjv-revelation-1.txt
 kjv-revelation-1.manifest.json
@@ -138,6 +138,10 @@ kjv-revelation-22.entries.ndjson
 kjv-revelation-22.txt
 kjv-revelation-22.manifest.json
 ```
+
+The public source-asset name includes the exact `vX.Y.Z` Composer pretty
+version used by PIE. Do not remove the leading `v`: PIE uses it while locating
+the GitHub release asset for a Packagist tag.
 
 Each Revelation evidence set is a selected group of exact `entry` records, not
 a complete `getbiblesword.ndjson/v1` stream. Each manifest sets

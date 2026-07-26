@@ -44,12 +44,14 @@ The Git tree intentionally excludes two much larger upstream inputs:
 archive and produces:
 
 ```text
-php_getbiblesword-VERSION-src.tgz
+php_getbiblesword-vVERSION-src.tgz
 ```
 
-That release archive contains all source required by PIE. It never selects an
-ambient system SWORD library and does not download native source during the PIE
-build.
+The leading `v` is intentional: Packagist exposes tagged releases to PIE by
+their Composer pretty version, such as `v0.1.1`, and PIE includes that exact
+version in its pre-packaged-source asset lookup. The archive contains all source
+required by PIE. It never selects an ambient system SWORD library and does not
+download native source during the PIE build.
 
 ## Built outputs
 
