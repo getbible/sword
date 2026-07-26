@@ -64,7 +64,7 @@ verify_artifact() {
         --argjson chapter "$chapter" \
         --argjson verses "$verses" \
         '
-            .artifact_format == "getbible/sword-release-evidence/v1"
+            .artifact_format == "getbible/sword-release-evidence/v2"
             and .module == "KJV"
             and .reference == $reference
             and .canonical_book == 66
@@ -72,13 +72,51 @@ verify_artifact() {
             and .testament_book == 27
             and .chapter == $chapter
             and .verses == $verses
+            and (.engine_version | type == "string" and length > 0)
+            and .abi_version == 1
             and .contract == "getbiblesword.ndjson/v1"
             and .whole_contract_stream == false
             and .entries_file == $entries_file
+            and (.entries_sha256 | test("^[0-9a-f]{64}$"))
             and .text_file == $text_file
+            and (.text_sha256 | test("^[0-9a-f]{64}$"))
+            and .fixture == {
+                "kind": "approved-baseline-replay",
+                "paths": [
+                    "tests/baselines/kjv-revelation-1/kjv-revelation-1.entries.ndjson",
+                    "tests/baselines/kjv-revelation-22/kjv-revelation-22.entries.ndjson"
+                ]
+            }
         ' \
         "$manifest" >/dev/null; then
-        echo "$label manifest does not describe KJV $reference." >&2
+        echo "$label manifest does not describe the local KJV $reference replay." >&2
+        return 1
+    fi
+
+    if [[ "$(wc -l < "$directory/$entries_file")" -ne "$verses" ]] \
+        || grep --quiet '^$' "$directory/$entries_file"; then
+        echo "$label entries are not exactly $verses non-empty NDJSON lines." >&2
+        return 1
+    fi
+    if ! jq \
+        --slurp \
+        --exit-status \
+        --argjson chapter "$chapter" \
+        --argjson verses "$verses" \
+        '
+            length == $verses
+            and ([.[].scope.verse] == [range(1; $verses + 1)])
+            and all(.[];
+                .type == "entry"
+                and .scope.type == "verse_key"
+                and .scope.intro_scope == "verse"
+                and .scope.testament == 2
+                and .scope.book == 27
+                and .scope.chapter == $chapter
+            )
+        ' \
+        "$directory/$entries_file" >/dev/null; then
+        echo "$label entries do not contain the complete Revelation $chapter scope." >&2
         return 1
     fi
 
@@ -107,12 +145,13 @@ compare_metadata() {
         testament_book,
         chapter,
         verses,
+        engine_version,
         abi_version,
         contract,
         whole_contract_stream,
         entries_file,
         text_file,
-        source_url
+        fixture
     }'
 
     if ! diff --unified \
@@ -131,6 +170,45 @@ compare_file() {
     local actual="$generated_directory/$file"
     local expected_sha actual_sha difference
 
+    if [[ "$file" == *.entries.ndjson ]]; then
+        if cmp --silent \
+            <(jq --compact-output --sort-keys 'del(.sequence, .ordinal)' "$expected") \
+            <(jq --compact-output --sort-keys 'del(.sequence, .ordinal)' "$actual"); then
+            printf 'Golden canonical match: %s (%s)\n' \
+                "$file" \
+                "$(
+                    jq --compact-output --sort-keys \
+                        'del(.sequence, .ordinal)' "$actual" \
+                        | sha256sum | cut -d' ' -f1
+                )"
+            return 0
+        fi
+
+        expected_sha="$(
+            jq --compact-output --sort-keys \
+                'del(.sequence, .ordinal)' "$expected" \
+                | sha256sum | cut -d' ' -f1
+        )"
+        actual_sha="$(
+            jq --compact-output --sort-keys \
+                'del(.sequence, .ordinal)' "$actual" \
+                | sha256sum | cut -d' ' -f1
+        )"
+        difference='canonicalized NDJSON differs; see the unified diff below'
+        {
+            printf 'Golden baseline mismatch: %s\n' "$file"
+            printf '  expected canonical SHA-256: %s\n' "$expected_sha"
+            printf '  generated canonical SHA-256: %s\n' "$actual_sha"
+            printf '  difference: %s\n' "$difference"
+        } >&2
+        diff --unified \
+            <(jq --compact-output --sort-keys \
+                'del(.sequence, .ordinal)' "$expected") \
+            <(jq --compact-output --sort-keys \
+                'del(.sequence, .ordinal)' "$actual") >&2 || true
+        return 1
+    fi
+
     if cmp --silent "$expected" "$actual"; then
         printf 'Golden baseline match: %s (%s)\n' \
             "$file" \
@@ -147,10 +225,7 @@ compare_file() {
         printf '  generated SHA-256: %s\n' "$actual_sha"
         printf '  first difference: %s\n' "$difference"
     } >&2
-
-    if [[ "$file" == *.txt ]]; then
-        diff --unified "$expected" "$actual" >&2 || true
-    fi
+    diff --unified "$expected" "$actual" >&2 || true
     return 1
 }
 
@@ -164,7 +239,6 @@ for chapter in "${chapters[@]}"; do
     artifact_prefix="kjv-revelation-${chapter}"
     entries_file="${artifact_prefix}.entries.ndjson"
     text_file="${artifact_prefix}.txt"
-    manifest_file="${artifact_prefix}.manifest.json"
 
     verify_artifact \
         "$baseline_directory" \
@@ -179,24 +253,6 @@ for chapter in "${chapters[@]}"; do
     compare_metadata "$baseline_directory" "$chapter"
     compare_file "$baseline_directory" "$entries_file"
     compare_file "$baseline_directory" "$text_file"
-
-    baseline_source_sha="$(
-        jq --raw-output '.source_sha256' \
-            "$baseline_directory/$manifest_file"
-    )"
-    generated_source_sha="$(
-        jq --raw-output '.source_sha256' \
-            "$generated_directory/$manifest_file"
-    )"
-    if [[ "$baseline_source_sha" != "$generated_source_sha" ]]; then
-        {
-            printf 'NOTICE: CrossWire repackaged or changed KJV.zip, but\n'
-            printf 'the generated Revelation %d output still matches.\n' \
-                "$chapter"
-            printf '  baseline source SHA-256: %s\n' "$baseline_source_sha"
-            printf '  current source SHA-256:  %s\n' "$generated_source_sha"
-        } >&2
-    fi
 done
 
-echo 'KJV Revelation 1 and 22 match the approved getbible/sword baselines.'
+echo 'KJV Revelation 1 and 22 match the approved self-replay baselines.'

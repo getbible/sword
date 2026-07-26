@@ -13,25 +13,28 @@ const CHAPTERS = [
     1 => 20,
     22 => 21,
 ];
-const SOURCE_URL = 'https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/KJV.zip';
+const FIXTURE = [
+    'kind' => 'approved-baseline-replay',
+    'paths' => [
+        'tests/baselines/kjv-revelation-1/kjv-revelation-1.entries.ndjson',
+        'tests/baselines/kjv-revelation-22/kjv-revelation-22.entries.ndjson',
+    ],
+];
 
-if ($argc !== 4) {
+if ($argc !== 3) {
     fwrite(
         STDERR,
         "Usage: php create-kjv-revelation-boundary-artifacts.php "
-        . "SWORD_ROOT OUTPUT_DIRECTORY SOURCE_SHA256\n"
+        . "SWORD_ROOT OUTPUT_DIRECTORY\n"
     );
     exit(2);
 }
 
-[$script, $swordRoot, $outputDirectory, $sourceSha256] = $argv;
+[$script, $swordRoot, $outputDirectory] = $argv;
 unset($script);
 
 if (!extension_loaded('getbiblesword')) {
     throw new RuntimeException('The getbiblesword extension is not loaded.');
-}
-if (!preg_match('/^[0-9a-f]{64}$/', $sourceSha256)) {
-    throw new InvalidArgumentException('SOURCE_SHA256 must be lowercase SHA-256.');
 }
 if (!is_dir($outputDirectory) && !mkdir($outputDirectory, 0777, true)) {
     throw new RuntimeException("Unable to create output directory: {$outputDirectory}");
@@ -256,7 +259,7 @@ try {
         $prefix = artifactPrefix($chapter);
         $manifestPath = "{$outputDirectory}/{$prefix}.manifest.json";
         $manifest = [
-            'artifact_format' => 'getbible/sword-release-evidence/v1',
+            'artifact_format' => 'getbible/sword-release-evidence/v2',
             'module' => MODULE,
             'reference' => BOOK_NAME . ' ' . $chapter,
             'canonical_book' => CANONICAL_BOOK_NUMBER,
@@ -272,8 +275,7 @@ try {
             'entries_sha256' => $entrySha256,
             'text_file' => basename($textPaths[$chapter]),
             'text_sha256' => $textSha256,
-            'source_url' => SOURCE_URL,
-            'source_sha256' => $sourceSha256,
+            'fixture' => FIXTURE,
         ];
         $encodedManifest = json_encode(
             $manifest,

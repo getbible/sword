@@ -75,7 +75,7 @@ validate_run() {
             --argjson chapter "$chapter" \
             --argjson verses "$verses" \
             '
-                .artifact_format == "getbible/sword-release-evidence/v1"
+                .artifact_format == "getbible/sword-release-evidence/v2"
                 and .module == "KJV"
                 and .reference == $reference
                 and .canonical_book == 66
@@ -83,11 +83,21 @@ validate_run() {
                 and .testament_book == 27
                 and .chapter == $chapter
                 and .verses == $verses
+                and (.engine_version | type == "string" and length > 0)
+                and .abi_version == 1
                 and .contract == "getbiblesword.ndjson/v1"
                 and .whole_contract_stream == false
                 and .entries_file == $entries_file
+                and (.entries_sha256 | test("^[0-9a-f]{64}$"))
                 and .text_file == $text_file
-                and (.source_sha256 | test("^[0-9a-f]{64}$"))
+                and (.text_sha256 | test("^[0-9a-f]{64}$"))
+                and .fixture == {
+                    "kind": "approved-baseline-replay",
+                    "paths": [
+                        "tests/baselines/kjv-revelation-1/kjv-revelation-1.entries.ndjson",
+                        "tests/baselines/kjv-revelation-22/kjv-revelation-22.entries.ndjson"
+                    ]
+                }
             ' \
             "$manifest" >/dev/null; then
             echo "Run $run_number has an invalid $reference manifest." >&2
@@ -144,7 +154,7 @@ for directory in "$@"; do
     fi
 done
 
-printf 'Five-run KJV Revelation boundary reproducibility confirmed.\n'
+printf 'Five-run KJV Revelation self-replay reproducibility confirmed.\n'
 for chapter in "${chapters[@]}"; do
     artifact_prefix="kjv-revelation-${chapter}"
     entries_sha256="$(
@@ -162,8 +172,4 @@ for chapter in "${chapters[@]}"; do
         "$chapter" \
         "$text_sha256"
 done
-source_sha256="$(
-    jq --raw-output '.source_sha256' \
-        "$reference_directory/kjv-revelation-1.manifest.json"
-)"
-printf '  CrossWire source SHA-256:       %s\n' "$source_sha256"
+printf '  Fixture: approved committed baseline replay (network-free)\n'

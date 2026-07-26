@@ -45,6 +45,7 @@ jobs:
           bash tests/release-versioning.sh
           bash tests/kjv-baseline-verification.sh
           bash tests/kjv-baseline-recovery.sh
+          bash tests/kjv-baseline-network-isolation.sh
           php -l getbiblesword.stub.php
           php -l tests/integration.php
           php -l scripts/create-kjv-revelation-boundary-artifacts.php
@@ -92,10 +93,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes \
             autoconf automake binutils build-essential cmake curl git \
-            libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
+            jq libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
             libtool pkg-config zlib1g-dev
       - name: Build and test extension
         run: ./scripts/build-extension.sh
+      - name: Replay and verify approved golden evidence
+        if: matrix.php == '8.4' && matrix.thread_safety == 'nts'
+        shell: bash
+        run: |
+          bash scripts/build-kjv-revelation-boundary-evidence.sh \
+            golden-evidence
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ always() && matrix.php == '8.4' && matrix.thread_safety == 'nts' && hashFiles('golden-evidence/*') != '' }}
+        with:
+          name: kjv-revelation-boundaries-${{ github.sha }}
+          path: golden-evidence/*
+          if-no-files-found: error
+          retention-days: 90
 
   pie:
     name: PIE source-package build
