@@ -55,7 +55,8 @@ cmake --build "$cli_build" --parallel
 cmp "$temporary_root/cli-list.ndjson" "$temporary_root/php-list.ndjson"
 cmp "$temporary_root/cli-extract.ndjson" "$temporary_root/php-extract.ndjson"
 
-if ldd "$extension" | grep -E 'lib(getbible)?sword\.so' >/dev/null; then
+if ldd "$extension" \
+    | grep -E 'lib(getbible)?sword[^[:space:]]*\.so' >/dev/null; then
     echo "The PHP extension unexpectedly depends on a SWORD shared library." >&2
     ldd "$extension" >&2
     exit 1
