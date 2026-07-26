@@ -181,12 +181,14 @@ pie build 'getbible/sword:dev-main'
 
 ## Golden release evidence
 
-The PHP 8.4 NTS CI job and every release download the public CrossWire KJV
-module as test input, build the extension, stream that module through
+Every pull request builds the extension and validates its deterministic local
+Public Domain SWORD fixture. The separate scheduled golden-baseline workflow
+and every release additionally download the public CrossWire KJV module as
+live test input, build the extension, stream that module through
 `GetBible\Sword\Engine`, and select the first and last chapters of canonical
-book 66 from getBibleSword's NDJSON output. The gate requires all 20 verses of
-Revelation 1 and all 21 verses of Revelation 22. CrossWire's archive is not the
-expected result or test oracle.
+book 66 from getBibleSword's NDJSON output. The live gate requires all 20
+verses of Revelation 1 and all 21 verses of Revelation 22. CrossWire's archive
+is not the expected result or test oracle.
 
 The workflow compares both chapters' newly generated entry records and readable
 text byte-for-byte with the maintainer-approved historical output committed
