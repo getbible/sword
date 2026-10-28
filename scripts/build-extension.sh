@@ -20,8 +20,15 @@ cd "$repository_root"
 # the cached static SWORD archive through its recursive cleanup rules.
 phpize
 ./configure --enable-getbiblesword
-# Recompile even when only the selected PHP ABI or compiler flags changed.
-make --always-make --jobs="${JOBS:-$detected_jobs}"
+# Remove only the extension's compiled targets before rebuilding. This picks up
+# PHP ABI/compiler changes without forcing regeneration of maintained arginfo
+# headers whose stubs have not changed, or deleting the cached SWORD archive.
+# shellcheck disable=SC2016
+make --no-print-directory --silent \
+    --eval='.PHONY: getbiblesword-rebuild-objects' \
+    --eval='getbiblesword-rebuild-objects: ; test -n "$(shared_objects_getbiblesword)" && rm -f -- $(shared_objects_getbiblesword)' \
+    getbiblesword-rebuild-objects
+make --jobs="${JOBS:-$detected_jobs}"
 
 if ! NO_INTERACTION=1 REPORT_EXIT_STATUS=1 make test TESTS=tests/phpt; then
     find tests/phpt \
