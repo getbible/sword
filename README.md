@@ -9,7 +9,7 @@
 
 `getbible/sword` is the native PHP extension for
 [getBibleSword](https://github.com/getbible/getbiblesword). It exposes the
-released getBibleSword `0.3.0` C ABI to PHP without starting a subprocess and
+released getBibleSword `0.4.0` C ABI to PHP without starting a subprocess and
 without requiring a system installation of `libsword`, `diatheke`, or the
 `getbiblesword` executable.
 
@@ -20,15 +20,15 @@ The package is designed for installation through the official
 pie install getbible/sword
 ```
 
-The first stable package will become installable through that command after the
-repository is submitted to Packagist and the release workflow publishes its
-first tag. See [Packagist setup](docs/packagist.md).
+PIE installs the published source package and builds the extension for the local
+PHP runtime. See [Packagist setup](docs/packagist.md) for package registration and
+release synchronization.
 
 ## Runtime model
 
 The extension embeds:
 
-- getBibleSword `0.3.0`;
+- getBibleSword `0.4.0`;
 - getBibleSword C ABI version `1`;
 - CrossWire SWORD `1.9.0`; and
 - the `getbiblesword.ndjson/v1` output contract.
@@ -36,6 +36,12 @@ The extension embeds:
 The resulting `getbiblesword.so` PHP module does not dynamically depend on
 `libsword.so` or `libgetbiblesword.so`. Bible translations, commentaries,
 dictionaries, and other SWORD modules remain external data.
+
+Version `0.4.0` adds strict UTF-8 `normalized_raw` and `normalized_stripped`
+entry projections and corrects current-entry official attribute extraction.
+The original raw bytes, rendered views, lexical annotations, and artifacts
+remain available. These improvements use the existing ABI and stream contract;
+the PHP method signatures are unchanged.
 
 ## PHP API
 
@@ -65,7 +71,7 @@ fclose($output);
 ```
 
 Both methods write the exact NDJSON bytes emitted by the standalone
-getBibleSword `0.3.0` CLI. They return the accepted byte count and throw
+getBibleSword `0.4.0` CLI. They return the accepted byte count and throw
 `GetBible\Sword\Exception` when the C ABI reports an extraction, write,
 cancellation, argument, or internal error. The exception code is the underlying
 `gbs_status` value.
@@ -74,12 +80,27 @@ Metadata is available without constructing an engine:
 
 ```php
 Engine::abiVersion();         // 1
-Engine::productVersion();     // "0.3.0"
+Engine::productVersion();     // "0.4.0"
 Engine::contractIdentifier(); // "getbiblesword.ndjson/v1"
 ```
 
 See [docs/php-api.md](docs/php-api.md) for the complete interface and error
 contract.
+
+### Dictionaries and commentaries
+
+`streamModules()` lists installed modules of every supported SWORD type.
+`streamModule()` accepts an installed Bible, dictionary/lexicon, or commentary
+module identifier and exports its complete data through the same streaming API.
+Use the module record's `classification`, authoritative `sword_type`, and driver
+metadata to identify its kind. Preserve entry keys, scopes, traversal order,
+and duplicate logical keys; dictionary entries do not have to be Bible verses.
+
+For text processing, prefer the optional normalized projections when present
+and non-null. They already contain strict UTF-8 and must not be decoded again
+using the module's source encoding. Retain original bytes and diagnostics when
+a normalized projection is unavailable. Direct key or reference lookup and
+application-level dictionary/commentary objects belong above this export API.
 
 ## Module-path resolution
 
@@ -100,8 +121,7 @@ getbiblesword.module_path=/var/lib/getbiblesword/sword
 The executing user needs read access to installed module data. ABI v1 does not
 install missing modules or perform network operations. Automatic repository
 installation and direct verse/reference queries require additive getBibleSword
-C ABI functions and are tracked as follow-up work; this initial package does not
-claim behavior the released native library does not provide.
+C ABI functions and remain outside the released native library's capabilities.
 
 ## Supported platforms
 
@@ -117,10 +137,27 @@ and the development packages used by SWORD. On Debian or Ubuntu:
 sudo apt-get install \
     autoconf automake binutils build-essential cmake curl git \
     libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
-    libtool pkg-config zlib1g-dev
+    libtool pkg-config python3 zlib1g-dev
 ```
 
 PIE can detect many missing build tools, but not every native SWORD dependency.
+ICU development headers and libraries are required for getBibleSword's strict
+encoding conversion; `pkg-config` must resolve `icu-uc`. The extension statically
+embeds SWORD and getBibleSword, but may dynamically link ICU and other platform
+libraries. Keep the linked runtime libraries installed on deployment hosts.
+
+## Upgrading an existing installation
+
+Install the new extension for each PHP runtime used by the application, then
+restart PHP-FPM and other long-running PHP workers so they load the new native
+code. Verify `Engine::productVersion()` reports `0.4.0` in the serving runtime.
+
+Force a server-side refresh of persisted module exports, snapshots, and any
+derived application caches using that application's supported refresh operation.
+Existing immutable exports retain their previous producer's data until they are
+regenerated; replacing the extension alone does not add normalized projections
+or corrected attributes to those files. Preserve the previous active snapshot
+until its replacement has passed complete stream validation.
 
 ## Source layout
 
@@ -149,7 +186,7 @@ Release source packages vendor, rather than dynamically select:
 
 | Dependency | Pin | Verification |
 |---|---|---|
-| getBibleSword | `v0.3.0` / `c52003438dc7e3d5bab0d6680372b1de8a0077ce` | Exact Git commit |
+| getBibleSword | `v0.4.0` / `f5115c5a3a3162471af3f7341b0a4265bdfecae0` | Exact Git commit |
 | CrossWire SWORD | `1.9.0` | SHA-256 `42409cf3de2faf1108523e2c5ac0745d21f9ed2a5c78ed878ee9dcc303426b8a` |
 
 Official builds never fall back to an ambient `libsword`.
@@ -168,8 +205,9 @@ The script:
 2. builds SWORD as a PIC static library;
 3. builds the PHP extension with `phpize`;
 4. runs PHPT tests;
-5. creates a real SWORD module fixture;
-6. compares CLI and PHP output byte-for-byte; and
+5. creates real Bible, commentary, and dictionary fixtures, including repeated
+   keys and valid and malformed non-ASCII source text;
+6. independently validates streams and compares CLI and PHP output byte-for-byte; and
 7. verifies that the extension has no SWORD shared-library dependency.
 
 To build the current branch through PIE before a release:
@@ -181,31 +219,34 @@ pie build 'getbible/sword:dev-main'
 
 ## Golden release evidence
 
-Every pull request builds the extension and validates its deterministic local
-Public Domain SWORD fixture. The separate scheduled golden-baseline workflow
-and every release additionally download the public CrossWire KJV module as
-live test input, build the extension, stream that module through
-`GetBible\Sword\Engine`, and select the first and last chapters of canonical
-book 66 from getBibleSword's NDJSON output. The live gate requires all 20
-verses of Revelation 1 and all 21 verses of Revelation 22. CrossWire's archive
-is not the expected result or test oracle.
+Every pull request builds the extension and validates deterministic local
+Public Domain SWORD fixtures. PHP 8.4 NTS CI, the scheduled golden-baseline
+workflow, and every release also rebuild a local KJV module from approved raw
+entry bytes. They stream it through `GetBible\Sword\Engine` and select all 20
+verses of Revelation 1 and all 21 verses of Revelation 22. This evidence path
+requires no module downloads.
 
 The workflow compares both chapters' newly generated entry records and readable
-text byte-for-byte with the maintainer-approved historical output committed
+text with the maintainer-approved historical output committed
 under `tests/baselines/kjv-revelation-1/` and
 `tests/baselines/kjv-revelation-22/`. It fails before publication on any output
-change, prints every verse, and publishes:
+change except full-stream position fields `sequence` and `ordinal`, prints
+every verse, and publishes:
 
 - two exact selected NDJSON entry-record files;
 - two human-readable chapter-text files; and
-- two manifests containing engine, ABI, contract, source, and artifact hashes.
+- two manifests containing engine, ABI, contract, local replay provenance, and
+  artifact hashes.
+
+The PHP 8.4 NTS PR job also requires five byte-identical extraction runs and
+retains their reproducibility report with the golden evidence.
 
 PR artifacts remain downloadable even when the comparison fails, making an
 unexpected result inspectable without weakening the golden baselines.
 
 The separate **Golden Baseline** workflow runs after each `main` update, daily,
 and on demand. If its strict comparison fails, **Golden Baseline Recovery**
-performs five independent live downloads and extension extractions. It proceeds
+performs five independent local fixture builds and extension extractions. It proceeds
 only when all six generated files match byte-for-byte across all five runs. A
 stable changed result is proposed on an `automation/kjv-golden-*` branch in a
 normal pull request. It is never written directly to `main`; a maintainer must

@@ -17,7 +17,15 @@ AS_IF([test "$PHP_GETBIBLESWORD" != "no"], [
   ])
 
   AS_IF(
-    [test ! -f "$abs_srcdir/vendor/getbiblesword/src/c_api.cpp"],
+    [! "$PKG_CONFIG" --exists icu-uc],
+    [AC_MSG_ERROR([ICU development headers and libraries (icu-uc) are required])]
+  )
+  GBS_ICU_CFLAGS="$("$PKG_CONFIG" --cflags icu-uc)"
+  GBS_ICU_LIBS="$("$PKG_CONFIG" --libs icu-uc)"
+
+  AS_IF(
+    [test ! -f "$abs_srcdir/vendor/getbiblesword/src/c_api.cpp" \
+      || test ! -f "$abs_srcdir/vendor/getbiblesword/src/source_encoding.cpp"],
     [AC_MSG_ERROR([
       Vendored getBibleSword sources are missing. Use the PIE source package
       or run ./scripts/vendor-dependencies.sh before phpize.
@@ -76,7 +84,11 @@ AS_IF([test "$PHP_GETBIBLESWORD" != "no"], [
   PHP_REQUIRE_CXX()
   CXXFLAGS="$CXXFLAGS -std=c++20 -fvisibility=hidden -fvisibility-inlines-hidden"
   PHP_EVAL_INCLINE($GBS_SWORD_CFLAGS)
+  PHP_EVAL_INCLINE($GBS_ICU_CFLAGS)
   PHP_EVAL_LIBLINE($GBS_SWORD_LIBS, GETBIBLESWORD_SHARED_LIBADD)
+  dnl ICU's distribution static archives are not necessarily PIC. Like the
+  dnl native C ABI library, the PHP shared extension links the ICU runtime.
+  PHP_EVAL_LIBLINE($GBS_ICU_LIBS, GETBIBLESWORD_SHARED_LIBADD)
   PHP_ADD_LIBRARY([stdc++], [1], [GETBIBLESWORD_SHARED_LIBADD])
   PHP_ADD_LIBRARY([pthread], [1], [GETBIBLESWORD_SHARED_LIBADD])
   GETBIBLESWORD_SHARED_LIBADD="$GETBIBLESWORD_SHARED_LIBADD -Wl,--exclude-libs,ALL"
@@ -96,6 +108,7 @@ AS_IF([test "$PHP_GETBIBLESWORD" != "no"], [
     vendor/getbiblesword/src/callback_streambuf.cpp
     vendor/getbiblesword/src/ndjson_writer.cpp
     vendor/getbiblesword/src/sha256.cpp
+    vendor/getbiblesword/src/source_encoding.cpp
     vendor/getbiblesword/src/sword_extractor.cpp
   "
 

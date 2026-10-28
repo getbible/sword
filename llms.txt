@@ -10,6 +10,10 @@ Current capabilities:
 - resolve a SWORD module root;
 - stream module discovery as `getbiblesword.ndjson/v1`;
 - stream complete module extraction as `getbiblesword.ndjson/v1`;
+- stream installed Bible, dictionary/lexicon, and commentary modules without
+  changing their entry keys, scopes, or traversal order;
+- forward optional strict UTF-8 `normalized_raw` and `normalized_stripped`
+  projections alongside original byte envelopes and encoding diagnostics;
 - expose native ABI, engine, and contract metadata;
 - build a self-contained extension from verified native sources;
 - publish through an automatic semantic-version and tag workflow;
@@ -42,8 +46,21 @@ Current non-capabilities:
 
 Native pins:
 
-- getBibleSword 0.3.0 / C ABI 1;
+- getBibleSword 0.4.0 / C ABI 1;
 - CrossWire SWORD 1.9.0.
+
+Native text and upgrade contract:
+
+- PHP method signatures and `getbiblesword.ndjson/v1` are unchanged;
+- normalized projections can be absent or null, and must never be decoded again
+  with the module's source encoding;
+- preserve raw data, ordered official attributes, diagnostics, and duplicate
+  logical keys;
+- ICU development files and `icu-uc` pkg-config metadata are build requirements;
+  linked ICU runtime libraries remain platform dependencies;
+- restart long-running PHP workers after an extension upgrade and force an
+  application-managed refresh of persisted module exports and derived caches;
+  existing immutable exports do not acquire the new producer's improvements.
 
 Source layout:
 

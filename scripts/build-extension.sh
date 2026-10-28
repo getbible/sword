@@ -15,13 +15,13 @@ cd "$repository_root"
 
 ./scripts/vendor-dependencies.sh
 
-if [[ -x ./configure ]]; then
-    phpize --clean >/dev/null
-fi
-
+# Regenerate build metadata in place. phpize --clean deletes tests/*.php,
+# including our integration source and local edits; make clean also removes
+# the cached static SWORD archive through its recursive cleanup rules.
 phpize
 ./configure --enable-getbiblesword
-make --jobs="${JOBS:-$detected_jobs}"
+# Recompile even when only the selected PHP ABI or compiler flags changed.
+make --always-make --jobs="${JOBS:-$detected_jobs}"
 
 if ! NO_INTERACTION=1 REPORT_EXIT_STATUS=1 make test TESTS=tests/phpt; then
     find tests/phpt \

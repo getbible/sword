@@ -52,7 +52,12 @@ readonly required_files=(
     "$package_root/config.m4"
     "$package_root/getbiblesword.c"
     "$package_root/vendor/getbiblesword/src/c_api.cpp"
+    "$package_root/vendor/getbiblesword/src/source_encoding.cpp"
     "$package_root/vendor/getbiblesword/include/getbiblesword/c_api.h"
+    "$package_root/vendor/getbiblesword/include/getbiblesword/source_encoding.hpp"
+    "$package_root/vendor/getbiblesword/generated/getbiblesword/version.hpp"
+    "$package_root/vendor/getbiblesword/LICENSE"
+    "$package_root/vendor/getbiblesword/ICU-LICENSE.txt"
     "$package_root/vendor/sword-1.9.0.tar.gz"
 )
 for required_file in "${required_files[@]}"; do
