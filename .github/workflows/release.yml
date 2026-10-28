@@ -209,7 +209,7 @@ jobs:
           sudo apt-get install --yes \
             autoconf automake binutils build-essential cmake curl git \
             libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
-            libtool pkg-config zlib1g-dev
+            libtool pkg-config python3 zlib1g-dev
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: php_getbiblesword-${{ needs.prepare.outputs.version }}-source
@@ -263,7 +263,7 @@ jobs:
           sudo apt-get install --yes \
             autoconf automake binutils build-essential cmake curl git \
             libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
-            jq libtool pkg-config unzip zlib1g-dev
+            jq libtool pkg-config python3 unzip zlib1g-dev
       - name: Build and test extension
         run: ./scripts/build-extension.sh
       - name: Extract Revelation 1 and 22 and print every verse

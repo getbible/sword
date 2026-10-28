@@ -5,7 +5,7 @@
 - Package name: `getbible/sword`
 - Extension name: `getbiblesword`
 - Namespace: `GetBible\Sword`
-- Native engine: getBibleSword `0.3.0`
+- Native engine: getBibleSword `0.4.0`
 - C ABI: version `1`
 - NDJSON contract: `getbiblesword.ndjson/v1`
 - SWORD: `1.9.0`

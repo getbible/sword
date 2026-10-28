@@ -1,6 +1,20 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-10-28
+
+- Embed the released getBibleSword 0.4.0 engine while preserving C ABI 1,
+  NDJSON v1, and every existing PHP method signature.
+- Build the native strict source decoder and explicitly link the ICU runtime;
+  include its source and license in verified PIE source packages.
+- Stream normalized UTF-8 projections, encoding diagnostics, and corrected
+  current-entry heading, footnote, and lexical attributes without changing raw
+  source bytes.
+- Verify real Bible, commentary, and dictionary extraction, including repeated
+  dictionary keys and non-UTF-8 sources, against the standalone native CLI.
+- Preserve tracked integration tests and cached native dependencies across
+  repeated local builds while recompiling for the selected PHP ABI.
+- Document worker restarts and server-side export/snapshot regeneration after
+  upgrading an application runtime.
 
 - Remove all CrossWire FTP and module-mirror downloads from golden evidence.
 - Rebuild the KJV Revelation 1 and 22 test module locally from the last

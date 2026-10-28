@@ -1,0 +1,8 @@
+$$$ALPHA
+<title canonical="true" subType="x-preverse">Dictionary heading</title><w lemma="strong:G0001" morph="robinson:N-NSM">café</w><note type="explanation"><p>Dictionary footnote.</p></note>
+$$$BETA
+A clean second entry.
+$$$DUPLICATE
+First definition for a repeated dictionary key.
+$$$DUPLICATE
+Second definition for the same repeated dictionary key.

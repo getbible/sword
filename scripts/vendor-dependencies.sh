@@ -4,9 +4,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-readonly GETBIBLESWORD_VERSION='0.3.0'
+readonly GETBIBLESWORD_VERSION='0.4.0'
 readonly GETBIBLESWORD_TAG="v${GETBIBLESWORD_VERSION}"
-readonly GETBIBLESWORD_COMMIT='c52003438dc7e3d5bab0d6680372b1de8a0077ce'
+readonly GETBIBLESWORD_COMMIT='f5115c5a3a3162471af3f7341b0a4265bdfecae0'
 readonly SWORD_VERSION='1.9.0'
 readonly SWORD_SHA256='42409cf3de2faf1108523e2c5ac0745d21f9ed2a5c78ed878ee9dcc303426b8a'
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -63,6 +63,27 @@ else
     printf '%s\n' "$GETBIBLESWORD_COMMIT" \
         > "$temporary_root/getbiblesword/.getbiblesword-vendor-version"
     mv -- "$temporary_root/getbiblesword" "$getbiblesword_target"
+fi
+
+readonly required_engine_files=(
+    'VERSION'
+    'LICENSE'
+    'ICU-LICENSE.txt'
+    'src/c_api.cpp'
+    'src/source_encoding.cpp'
+    'include/getbiblesword/c_api.h'
+    'include/getbiblesword/source_encoding.hpp'
+    'generated/getbiblesword/version.hpp'
+)
+for required_file in "${required_engine_files[@]}"; do
+    if [[ ! -f "$getbiblesword_target/$required_file" ]]; then
+        echo "Vendored getBibleSword input is missing: $required_file" >&2
+        exit 1
+    fi
+done
+if [[ "$(tr -d '\r\n' < "$getbiblesword_target/VERSION")" != "$GETBIBLESWORD_VERSION" ]]; then
+    echo "Vendored getBibleSword VERSION does not match the pinned release." >&2
+    exit 1
 fi
 
 if [[ -f "$sword_target" ]]; then

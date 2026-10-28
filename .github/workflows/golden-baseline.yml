@@ -34,7 +34,7 @@ jobs:
           sudo apt-get install --yes \
             autoconf automake binutils build-essential cmake curl git \
             jq libbz2-dev libcurl4-openssl-dev libicu-dev liblzma-dev \
-            libtool pkg-config zlib1g-dev
+            libtool pkg-config python3 zlib1g-dev
       - name: Build and test extension
         run: ./scripts/build-extension.sh
       - name: Replay and verify Revelation boundary chapters

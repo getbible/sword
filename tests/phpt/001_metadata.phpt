@@ -16,7 +16,7 @@ var_dump(Engine::DEFAULT_ARTIFACT_CHUNK_SIZE);
 --EXPECT--
 bool(true)
 int(1)
-string(5) "0.3.0"
+string(5) "0.4.0"
 string(23) "getbiblesword.ndjson/v1"
 int(1)
 int(1048576)

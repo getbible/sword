@@ -27,8 +27,8 @@ immediately.
 The name and extension metadata come from the committed `composer.json`. Do not
 create a second package under another name.
 
-Before the first tag exists, Packagist may show only `dev-main`. The first stable
-version appears after the release workflow creates `v0.1.0`.
+Packagist derives stable versions from release tags. Confirm that the latest
+published tag is visible; `dev-main` alone is insufficient for a stable install.
 
 ## Automatic synchronization
 
@@ -68,3 +68,15 @@ php --ri getbiblesword
 
 Also confirm that the Packagist package page lists the same stable version as the
 GitHub tag and release.
+
+The embedded native engine version is separate from the extension package
+version. For this upgrade, the loaded extension must report:
+
+```bash
+php -r 'echo GetBible\Sword\Engine::productVersion(), PHP_EOL;'
+```
+
+Expected output is `0.4.0`. Check the same PHP runtime used by the application,
+restart its long-running workers after installation, and refresh persisted
+module exports and derived caches as described in the
+[upgrade guide](../README.md#upgrading-an-existing-installation).

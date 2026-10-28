@@ -40,11 +40,13 @@ The workflow behaves as follows:
 6. It builds the deterministic pre-packaged PIE source archive.
 7. It builds that archive through PIE on PHP 8.4.
 8. It builds the extension and runs all normal integration and parity checks.
-9. It repeats the CI-tested live download of the public CrossWire KJV module as
-   test input and passes that module through the built PHP extension once.
+9. It rebuilds the local KJV Revelation fixture from the committed, approved
+   raw entry bytes and passes that module through the built PHP extension.
 10. It selects all 20 Revelation 1 entries and all 21 Revelation 22 entries
     from getBibleSword's own NDJSON output and compares each chapter's NDJSON
-    and readable text byte-for-byte with its approved repository baseline.
+    and readable text with its approved repository baseline. Entry comparison
+    excludes only the full-stream position fields `sequence` and `ordinal`;
+    every other field and the readable text must match exactly.
 11. It uploads both chapters' generated NDJSON, text, and manifest files as
     workflow and GitHub-release assets.
 12. It publishes the immutable GitHub release with generated release notes only
@@ -76,8 +78,8 @@ The **Golden Baseline** workflow is independent of releases. It runs:
 - daily at 03:17 UTC; and
 - whenever a maintainer dispatches it manually.
 
-It builds and tests the extension, downloads the current public CrossWire KJV
-module as input, streams it through `GetBible\Sword\Engine`, and compares
+It builds and tests the extension, compiles the approved local KJV replay
+fixture, streams it through `GetBible\Sword\Engine`, and compares
 Revelation 1 and 22 with the approved repository files. Its generated artifact
 is retained even on failure.
 
@@ -86,7 +88,7 @@ Recovery**. Recovery:
 
 1. checks out the exact failed `main` commit;
 2. builds and tests the extension once;
-3. independently downloads KJV and runs the extension five times;
+3. independently rebuilds the local fixture and runs the extension five times;
 4. validates all 20 Revelation 1 verses and all 21 Revelation 22 verses;
 5. requires the two NDJSON files, two text files, and two manifests to match
    byte-for-byte across all five runs;
@@ -145,15 +147,23 @@ the GitHub release asset for a Packagist tag.
 
 Each Revelation evidence set is a selected group of exact `entry` records, not
 a complete `getbiblesword.ndjson/v1` stream. Each manifest sets
-`whole_contract_stream` to `false` and records hashes for the source KJV archive
-and its two evidence files.
+`whole_contract_stream` to `false`, records local replay provenance, and hashes
+its two evidence files. Evidence generation makes no module-network requests.
 
 The approved historical output is committed in
 `tests/baselines/kjv-revelation-1/` and
-`tests/baselines/kjv-revelation-22/`. CrossWire's downloaded module is live test
-input; it is not used as the expected output. The extension must regenerate
-both chapters, and all four generated payload files must match the committed
-output exactly.
+`tests/baselines/kjv-revelation-22/`. The approved raw source bytes seed the local
+module; expected normalized text, attributes, and annotations remain checked
+against the committed records. The extension must regenerate both chapters;
+canonical entries and readable chapter text must match the committed output.
+
+An intentional native-engine upgrade can change structured extraction output.
+Before proposing new baselines, run the extension five times, verify identical
+evidence with `verify-kjv-revelation-boundary-reproducibility.sh`, and review
+every semantic difference against the upstream changes. Preserve the readable
+text oracle unless a separately explained correction is intended. Include the
+evidence and review in the upgrade PR. PHP 8.4 NTS CI repeats the five-run check;
+it does not automatically promote output or weaken the baseline comparison.
 
 If the comparison fails, the workflow fails and no GitHub release is published.
 The generated files are still uploaded as a workflow artifact when they exist,
@@ -172,3 +182,10 @@ php --ri getbiblesword
 
 Test on both CLI and PHP-FPM. Confirm that `ldd` on the installed extension does
 not list `libsword.so` or `libgetbiblesword.so`.
+
+Restart PHP-FPM and other persistent PHP workers so they load the new native
+module. Regenerate application-managed snapshots, persisted exports, and their
+derived caches to consume improved extraction output. Installing the extension
+does not rewrite these artifacts; use the application's explicit refresh path
+even when its normal refresh interval has not elapsed. See the README upgrade
+checklist before completing a server rollout.
